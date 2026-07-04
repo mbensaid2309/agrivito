@@ -1,8 +1,8 @@
 # PROMPT CODEX - SPRINT 1
 
-Tu es Lead Developer sur le projet AgriAI.
+Tu es Lead Developer sur le projet Agrivito.
 
-AgriAI est une plateforme intelligente d’assistance à la décision agricole.
+Agrivito est une plateforme intelligente d’assistance à la décision agricole.
 
 Ton rôle est de développer le socle technique initial du MVP en respectant strictement les documents validés dans le dossier `docs/`.
 
@@ -17,29 +17,43 @@ docs/19-Technology-ADRs.md
 docs/20-MVP-Backlog.md
 docs/21-Codex-Handbook.md
 docs/22-Sprint-1-Plan.md
+docs/23-Brand-Name-Decision.md
 ```
 
 Tu dois respecter ces documents comme source de vérité.
+
+Point important :
+
+```text
+AgriAI = ancien nom de travail
+Agrivito = nom produit officiel
+```
+
+Toutes les nouvelles implémentations doivent utiliser **Agrivito**.
 
 ---
 
 # Objectif du Sprint 1
 
-Créer le socle technique initial du projet AgriAI.
+Créer le socle technique initial du projet Agrivito.
 
 À la fin du Sprint 1, le repository doit contenir :
 
 ```text
-agri-ai/
+agrivito/
  ├── docs/
- ├── apps/mobile/
- ├── services/backend/
+ ├── prompts/
+ │    └── PROMPT-CODEX-SPRINT-1.md
+ ├── apps/
+ │    └── mobile/
+ ├── services/
+ │    └── backend/
  ├── infra/
  ├── scripts/
- ├── .github/workflows/
+ ├── .github/
+ │    └── workflows/
  ├── .gitignore
- ├── README.md
- └── PROMPT-CODEX-SPRINT-1.md
+ └── README.md
 ```
 
 ---
@@ -51,18 +65,33 @@ agri-ai/
 Créer ou vérifier la structure du repository :
 
 ```text
-agri-ai/
+agrivito/
  ├── docs/
+ ├── prompts/
+ │    └── PROMPT-CODEX-SPRINT-1.md
  ├── apps/
  │    └── mobile/
  ├── services/
  │    └── backend/
  ├── infra/
  ├── scripts/
+ ├── .github/
+ │    └── workflows/
+ ├── .gitignore
  └── README.md
 ```
 
 Ajouter `.gitkeep` dans les dossiers vides si nécessaire.
+
+Ne pas créer de dossier `agri-ai`.
+
+Ne pas créer `PROMPT-CODEX-SPRINT-1.md` à la racine.
+
+Le prompt Sprint 1 doit rester dans :
+
+```text
+prompts/PROMPT-CODEX-SPRINT-1.md
+```
 
 ---
 
@@ -104,7 +133,7 @@ Réponse attendue :
 ```json
 {
   "status": "ok",
-  "service": "agri-ai-backend"
+  "service": "agrivito-backend"
 }
 ```
 
@@ -112,11 +141,17 @@ Réponse attendue :
 
 ## 3. Configuration backend
 
-Créer `.env.example` avec :
+Créer `.env.example` dans :
+
+```text
+services/backend/.env.example
+```
+
+Contenu attendu :
 
 ```text
 APP_ENV=local
-APP_NAME=agri-ai-backend
+APP_NAME=agrivito-backend
 AWS_REGION=
 AWS_S3_BUCKET=
 AWS_COGNITO_USER_POOL_ID=
@@ -145,13 +180,21 @@ Les tests doivent être documentés dans le README backend.
 
 ## 5. Docker backend
 
-Ajouter un `Dockerfile` backend.
+Ajouter un `Dockerfile` backend dans :
+
+```text
+services/backend/Dockerfile
+```
 
 Le backend doit pouvoir démarrer en container.
 
 Le endpoint `/health` doit répondre depuis le container.
 
-Documenter les commandes Docker dans le README backend.
+Documenter les commandes Docker dans :
+
+```text
+services/backend/README.md
+```
 
 ---
 
@@ -177,6 +220,12 @@ Créer une navigation simple entre les écrans.
 
 Prévoir une configuration pour l’URL backend.
 
+Le nom affiché dans l’application doit être :
+
+```text
+Agrivito
+```
+
 ---
 
 ## 7. Connexion mobile vers backend
@@ -186,6 +235,15 @@ Depuis l’application mobile :
 * appeler `GET /health` ;
 * afficher le statut backend ;
 * afficher une erreur claire si le backend est indisponible.
+
+La réponse attendue du backend est :
+
+```json
+{
+  "status": "ok",
+  "service": "agrivito-backend"
+}
+```
 
 ---
 
@@ -250,6 +308,18 @@ Les README doivent expliquer :
 * Docker pour backend ;
 * limites connues.
 
+Le README principal doit utiliser le nom :
+
+```text
+Agrivito
+```
+
+et non :
+
+```text
+AgriAI
+```
+
 ---
 
 ## 11. CI GitHub Actions
@@ -303,6 +373,36 @@ Ne jamais mettre de secret dans Git.
 Ne pas introduire Kubernetes, EKS, microservices multiples, DynamoDB, MongoDB, Firebase ou Supabase.
 
 Faire simple, lisible et maintenable.
+
+---
+
+# Règles de nommage
+
+Utiliser :
+
+```text
+Agrivito
+```
+
+pour le nom produit affiché.
+
+Utiliser :
+
+```text
+agrivito
+```
+
+pour les noms techniques.
+
+Exemples :
+
+```text
+agrivito-backend
+agrivito-mobile
+agrivito-api
+```
+
+Ne pas utiliser `agri-ai` dans les nouveaux fichiers, dossiers, services ou configurations.
 
 ---
 
