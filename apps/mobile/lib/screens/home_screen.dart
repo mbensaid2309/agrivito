@@ -60,10 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
             'Backend indisponible. Verifiez que l API FastAPI est lancee.';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isChecking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+        });
+      }
     }
   }
 
