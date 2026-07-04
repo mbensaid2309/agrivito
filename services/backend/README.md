@@ -40,16 +40,56 @@ Reponse attendue :
 }
 ```
 
+Question decouverte :
+
+```bash
+curl -X POST http://127.0.0.1:8000/discovery/question \
+  -H "content-type: application/json" \
+  -d '{"session_id":"temporary-session-id","question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
+```
+
+Reponse attendue :
+
+```json
+{
+  "answer": {
+    "summary": "Les feuilles jaunes peuvent avoir plusieurs causes.",
+    "response": "Cela peut venir d'un manque d'eau, d'un excès d'eau, d'une carence ou d'une maladie. Pour être plus fiable, Agrivito doit connaître le contexte.",
+    "trust_score": {
+      "score": 60,
+      "level": "moyen",
+      "explanation": "Réponse générale sans photo ni contexte de culture."
+    },
+    "follow_up_questions": [
+      "Depuis combien de temps les feuilles jaunissent ?",
+      "Les feuilles jaunes sont-elles en bas ou en haut de la plante ?",
+      "À quelle fréquence arrosez-vous ?"
+    ],
+    "precautions": [
+      "Ne pas appliquer de traitement sans diagnostic plus précis.",
+      "Ajouter une photo dans un prochain sprint pour améliorer l'analyse."
+    ]
+  },
+  "usage": {
+    "questions_used": 1,
+    "questions_limit": 3,
+    "remaining": 2
+  }
+}
+```
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-Tests presents au Sprint 1 :
+Tests presents :
 
 - chargement de l'application FastAPI ;
 - endpoint `GET /health` ;
+- endpoint `POST /discovery/question` ;
+- validation des requetes discovery invalides ;
 - configuration minimale ;
 - Trust Score MVP mocke et niveaux associes.
 
@@ -81,4 +121,5 @@ Les variables attendues sont documentees dans `.env.example`. Aucun secret reel 
 
 - Aucun appel OpenAI reel au Sprint 1.
 - Cognito, S3, RDS PostgreSQL et App Runner sont prevus par l'architecture mais non integres dans ce socle.
-- Le Trust Score retourne un score provisoire mocke.
+- Le Trust Score discovery retourne un score prudent mocke.
+- La limite discovery est preparee sans base de donnees au Sprint 2.

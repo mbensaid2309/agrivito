@@ -2,9 +2,16 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 1
+## Objectif Sprint 2
 
-Ce socle initialise le repository, le backend minimal, l'application mobile initiale, la structure IA, les tests backend, Docker et une CI GitHub Actions simple.
+Le Sprint 2 ajoute le socle d'acces utilisateur et le mode decouverte :
+
+- usage sans compte ;
+- session decouverte locale cote mobile ;
+- limite simple de 3 questions ;
+- endpoint backend `POST /discovery/question` ;
+- reponse agricole mockee avec Trust Score, questions complementaires et precautions ;
+- preparation Login / Register pour Cognito via Amplify, sans integration AWS reelle.
 
 ## Stack validee
 
@@ -56,6 +63,14 @@ Healthcheck :
 curl http://127.0.0.1:8000/health
 ```
 
+Question en mode decouverte :
+
+```bash
+curl -X POST http://127.0.0.1:8000/discovery/question \
+  -H "content-type: application/json" \
+  -d '{"session_id":"temporary-session-id","question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
+```
+
 ## Mobile local
 
 ```bash
@@ -97,6 +112,7 @@ flutter test
 
 ## Limites connues
 
-- L'authentification Cognito, S3, RDS et les appels OpenAI reels sont prepares mais non implementes au Sprint 1.
-- Le Trust Score est mocke pour poser l'interface technique.
+- L'authentification Cognito, S3, RDS et les appels OpenAI reels sont prepares mais non finalises.
+- Le mode decouverte est limite a 3 questions en session locale mobile.
+- Le backend discovery retourne une reponse mockee prudente, sans appel OpenAI reel.
 - La CI mobile effectue une verification Flutter minimale sans deploiement.
