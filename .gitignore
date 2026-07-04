@@ -1,7 +1,42 @@
+# macOS
 .DS_Store
-node_modules/
-dist/
-build/
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# FastAPI / local runtime
+*.log
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+ios/Flutter/.last_build_id
+
+# Node / generic build artifacts
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
