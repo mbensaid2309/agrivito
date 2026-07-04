@@ -46,7 +46,21 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze > analyze.log 2>&1
+          status=$?
+          cat analyze.log
+          if [ "$status" -ne 0 ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+
+          message = Path("analyze.log").read_text()
+          message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=flutter analyze failed::{message}")
+          PY
+            exit "$status"
+          fi
 
       - name: Test
         run: flutter test
