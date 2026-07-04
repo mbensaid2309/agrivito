@@ -116,32 +116,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.chat_outlined,
               label: 'Chat',
               routeName: ChatScreen.routeName,
             ),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.fact_check_outlined,
               label: 'Diagnostic Result',
               routeName: DiagnosticResultScreen.routeName,
             ),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.login,
               label: 'Login',
               routeName: LoginScreen.routeName,
             ),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.person_add_alt_1_outlined,
               label: 'Register',
               routeName: RegisterScreen.routeName,
             ),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.history,
               label: 'History',
               routeName: HistoryScreen.routeName,
             ),
-            _NavigationButton(
+            const _NavigationButton(
               icon: Icons.person_outline,
               label: 'Profile',
               routeName: ProfileScreen.routeName,
