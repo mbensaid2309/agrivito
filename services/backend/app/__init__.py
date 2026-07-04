@@ -1,0 +1,1 @@
+"""Agrivito backend application package."""
