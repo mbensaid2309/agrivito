@@ -40,6 +40,29 @@ Reponse attendue :
 }
 ```
 
+## API agricole Sprint 3
+
+Le backend expose les fondations metier suivantes :
+
+```text
+GET  /farmer/profile
+POST /farmer/profile
+GET  /farms
+POST /farms
+GET  /farms/{farm_id}
+GET  /farms/{farm_id}/fields
+POST /farms/{farm_id}/fields
+GET  /fields/{field_id}
+GET  /crops
+POST /crops
+GET  /crops/{crop_id}
+POST /fields/{field_id}/crop
+GET  /fields/{field_id}/crop
+```
+
+Les donnees sont stockees en memoire pour le Sprint 3. Elles sont effacees au
+redemarrage du backend et ne constituent pas encore une persistance utilisateur.
+
 Question decouverte :
 
 ```bash
@@ -90,6 +113,10 @@ Tests presents :
 - endpoint `GET /health` ;
 - endpoint `POST /discovery/question` ;
 - validation des requetes discovery invalides ;
+- creation et lecture du profil agricole ;
+- creation et lecture des exploitations, parcelles et cultures ;
+- association d'une culture principale a une parcelle ;
+- validation des champs agricoles et erreurs sur identifiants inexistants ;
 - configuration minimale ;
 - Trust Score MVP mocke et niveaux associes.
 
@@ -119,7 +146,8 @@ Les variables attendues sont documentees dans `.env.example`. Aucun secret reel 
 
 ## Limites connues
 
-- Aucun appel OpenAI reel au Sprint 1.
+- Aucun appel OpenAI reel.
 - Cognito, S3, RDS PostgreSQL et App Runner sont prevus par l'architecture mais non integres dans ce socle.
 - Le Trust Score discovery retourne un score prudent mocke.
 - La limite discovery est preparee sans base de donnees au Sprint 2.
+- Le stockage agricole Sprint 3 est in-memory, sans PostgreSQL ni Alembic.
