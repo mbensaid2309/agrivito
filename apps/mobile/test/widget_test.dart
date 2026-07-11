@@ -32,7 +32,7 @@ void main() {
 
   testWidgets('Login screen prepares auth and discovery access', (tester) async {
     await tester.pumpWidget(const AgrivitoApp(enableHealthCheck: false));
-    await tester.ensureVisible(find.text('Login'));
+    await tester.scrollUntilVisible(find.text('Login'), 300);
     await tester.tap(find.text('Login'));
     await tester.pumpAndSettle();
 
@@ -44,7 +44,7 @@ void main() {
 
   testWidgets('Register screen shows confirmation field', (tester) async {
     await tester.pumpWidget(const AgrivitoApp(enableHealthCheck: false));
-    await tester.ensureVisible(find.text('Register'));
+    await tester.scrollUntilVisible(find.text('Register'), 300);
     await tester.tap(find.text('Register'));
     await tester.pumpAndSettle();
 
