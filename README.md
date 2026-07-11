@@ -2,16 +2,16 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 2
+## Objectif Sprint 3
 
-Le Sprint 2 ajoute le socle d'acces utilisateur et le mode decouverte :
+Le Sprint 3 ajoute le contexte agricole de base tout en maintenant le mode decouverte :
 
-- usage sans compte ;
-- session decouverte locale cote mobile ;
-- limite simple de 3 questions ;
-- endpoint backend `POST /discovery/question` ;
-- reponse agricole mockee avec Trust Score, questions complementaires et precautions ;
-- preparation Login / Register pour Cognito via Amplify, sans integration AWS reelle.
+- profil agricole ;
+- exploitations et parcelles ;
+- cultures et association culture / parcelle ;
+- endpoints FastAPI types avec stockage in-memory ;
+- parcours Flutter local simple pour saisir ce contexte ;
+- conservation du mode decouverte et de sa limite de 3 questions.
 
 ## Stack validee
 
@@ -71,6 +71,9 @@ curl -X POST http://127.0.0.1:8000/discovery/question \
   -d '{"session_id":"temporary-session-id","question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
 ```
 
+Les endpoints agricoles sont documentes dans `services/backend/README.md` et
+disponibles dans la documentation interactive FastAPI sur `/docs`.
+
 ## Mobile local
 
 ```bash
@@ -108,11 +111,15 @@ flutter test
 - Ne jamais stocker de secret dans Git.
 - Ne jamais appeler OpenAI depuis le mobile.
 - Garder les evolutions limitees au sprint valide.
-- Respecter les documents dans `docs/`, en particulier `19-Technology-ADRs.md`, `21-Codex-Handbook.md`, `22-Sprint-1-Plan.md` et `23-Brand-Name-Decision.md`.
+- Respecter les documents approuves dans `docs/`, notamment les plans Sprint 2
+  et Sprint 3.
 
 ## Limites connues
 
 - L'authentification Cognito, S3, RDS et les appels OpenAI reels sont prepares mais non finalises.
 - Le mode decouverte est limite a 3 questions en session locale mobile.
 - Le backend discovery retourne une reponse mockee prudente, sans appel OpenAI reel.
+- Les donnees agricoles sont uniquement conservees en memoire : PostgreSQL n'est
+  pas encore branche.
+- Les donnees agricoles du mobile sont locales et perdues au redemarrage.
 - La CI mobile effectue une verification Flutter minimale sans deploiement.

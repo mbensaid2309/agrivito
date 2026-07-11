@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
+import 'agricultural_profile_screen.dart';
 import 'chat_screen.dart';
+import 'crops_screen.dart';
 import 'diagnostic_result_screen.dart';
 import 'history_screen.dart';
+import 'farms_screen.dart';
+import 'field_crop_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'register_screen.dart';
@@ -90,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Socle mobile Sprint 1 pour poser les bases du MVP.',
+              'Votre contexte agricole pour des conseils plus pertinents.',
             ),
             const SizedBox(height: 16),
             DecoratedBox(
@@ -117,6 +121,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            Text(
+              'Mon contexte agricole',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const _NavigationButton(
+              icon: Icons.badge_outlined,
+              label: 'Profil agricole',
+              routeName: AgriculturalProfileScreen.routeName,
+            ),
+            const _NavigationButton(
+              icon: Icons.agriculture_outlined,
+              label: 'Mes exploitations',
+              routeName: FarmsScreen.routeName,
+            ),
+            const _NavigationButton(
+              icon: Icons.grass_outlined,
+              label: 'Mes cultures',
+              routeName: CropsScreen.routeName,
+            ),
+            const _NavigationButton(
+              icon: Icons.link,
+              label: 'Associer culture et parcelle',
+              routeName: FieldCropScreen.routeName,
+            ),
+            const SizedBox(height: 8),
             const _NavigationButton(
               icon: Icons.chat_outlined,
               label: 'Chat',

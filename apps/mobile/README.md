@@ -4,7 +4,9 @@ Application Flutter du MVP Agrivito.
 
 ## Objectif
 
-Poser le socle mobile du mode decouverte Sprint 2 avec une session locale, une limite de 3 questions, un Chat connecte au backend discovery et des ecrans Login / Register prepares pour Cognito via Amplify.
+Permettre un parcours agricole Sprint 3 simple pour saisir un profil, des
+exploitations, des parcelles et des cultures, tout en maintenant le mode
+decouverte Sprint 2.
 
 ## Stack
 
@@ -49,6 +51,18 @@ flutter test
 - Register prepare pour Cognito / Amplify
 - History
 - Profile
+- Profil agricole
+- Mes exploitations et detail d'exploitation
+- Creation et liste des parcelles
+- Mes cultures
+- Association culture / parcelle
+
+## Contexte agricole
+
+Les donnees agricoles sont gerees par une couche locale in-memory. L'utilisateur
+peut creer une exploitation, ajouter des parcelles, declarer des cultures et
+associer une culture principale a une parcelle. Cette couche reste volontairement
+simple en attendant la persistance backend PostgreSQL.
 
 ## Mode decouverte
 
@@ -76,8 +90,10 @@ http://127.0.0.1:8000
 
 ## Limites connues
 
-- Pas d'authentification Cognito effective au Sprint 2.
+- Pas d'authentification Cognito effective.
 - Pas d'appel OpenAI depuis le mobile.
 - Pas d'historique persistant complet.
 - La session decouverte est locale et non persistante.
 - Les reponses discovery sont mockees cote backend.
+- Le contexte agricole mobile n'est pas persistant et est perdu au redemarrage.
+- Les formulaires agricoles ne sont pas encore connectes aux endpoints backend.
