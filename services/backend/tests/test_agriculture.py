@@ -3,17 +3,18 @@ from typing import Optional
 import pytest
 from fastapi.testclient import TestClient
 
+from app.db.base import Base
+from app.db.database import get_engine
 from app.main import app
-from app.services.agriculture.store import store
 
 
 @pytest.fixture(autouse=True)
-def reset_agriculture_store() -> None:
-    store.farmer_profile = None
-    store.farms.clear()
-    store.fields.clear()
-    store.crops.clear()
-    store.field_crops.clear()
+def reset_agriculture_database() -> None:
+    engine = get_engine()
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    yield
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture
@@ -37,6 +38,13 @@ def test_farmer_profile_flow(client: TestClient) -> None:
     assert created.status_code == 201
     assert fetched.status_code == 200
     assert fetched.json()["display_name"] == "Ferme Atlas"
+    duplicate = client.post("/farmer/profile", json=payload)
+    assert duplicate.status_code == 409
+
+    second_client = TestClient(app)
+    persisted = second_client.get("/farmer/profile")
+    assert persisted.status_code == 200
+    assert persisted.json()["user_id"] == "user-1"
 
 
 def test_farm_field_crop_flow(client: TestClient) -> None:
@@ -49,7 +57,7 @@ def test_farm_field_crop_flow(client: TestClient) -> None:
             "region": "Souss-Massa",
             "locality": "Taroudant",
             "total_area": 4.5,
-            "area_unit": "ha",
+            "area_unit": "hectare",
         },
     )
     assert farm_response.status_code == 201
@@ -62,7 +70,7 @@ def test_farm_field_crop_flow(client: TestClient) -> None:
         json={
             "name": "Parcelle nord",
             "area": 1.2,
-            "area_unit": "ha",
+            "area_unit": "hectare",
             "soil_type": "argileux",
             "water_access": "seasonal",
             "irrigation_type": "drip",
@@ -98,6 +106,11 @@ def test_farm_field_crop_flow(client: TestClient) -> None:
     )
     assert association.status_code == 201
     assert client.get(f"/fields/{field_id}/crop").json()["crop_id"] == crop_id
+    duplicate_active = client.post(
+        f"/fields/{field_id}/crop",
+        json={"crop_id": crop_id, "status": "active"},
+    )
+    assert duplicate_active.status_code == 409
 
 
 @pytest.mark.parametrize(

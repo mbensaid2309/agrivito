@@ -1,49 +1,95 @@
 import 'package:flutter/material.dart';
 
-import '../services/agriculture_store.dart';
+import '../models/agriculture_models.dart';
+import '../services/agriculture_api_service.dart';
 
 class CropsScreen extends StatefulWidget {
-  const CropsScreen({super.key});
+  const CropsScreen({required this.api, super.key});
 
   static const routeName = '/crops';
+  final AgricultureApi api;
 
   @override
   State<CropsScreen> createState() => _CropsScreenState();
 }
 
 class _CropsScreenState extends State<CropsScreen> {
+  List<CropData> _crops = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCrops();
+  }
+
+  Future<void> _loadCrops() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final crops = await widget.api.getCrops();
+      if (!mounted) return;
+      setState(() => _crops = crops);
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _createCrop() async {
-    final crop = await showDialog<CropData>(
+    final draft = await showDialog<CropData>(
       context: context,
       builder: (_) => const _CreateCropDialog(),
     );
-    if (crop != null) {
-      setState(() => AgricultureStore.instance.crops.add(crop));
+    if (draft == null) {
+      return;
+    }
+    try {
+      final crop = await widget.api.createCrop(draft);
+      if (!mounted) return;
+      setState(() => _crops = [..._crops, crop]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Culture enregistrée.')),
+      );
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final crops = AgricultureStore.instance.crops;
     return Scaffold(
       appBar: AppBar(title: const Text('Mes cultures')),
-      body: crops.isEmpty
-          ? const Center(child: Text('Aucune culture enregistrée.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: crops.length,
-              itemBuilder: (context, index) {
-                final crop = crops[index];
-                return ListTile(
-                  leading: const Icon(Icons.grass_outlined),
-                  title: Text(crop.name),
-                  subtitle: Text('${crop.category} · ${crop.growthStage}'),
-                );
-              },
-            ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text(_error!))
+              : _crops.isEmpty
+                  ? const Center(child: Text('Aucune culture enregistrée.'))
+                  : RefreshIndicator(
+                      onRefresh: _loadCrops,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _crops.length,
+                        itemBuilder: (context, index) {
+                          final crop = _crops[index];
+                          return ListTile(
+                            leading: const Icon(Icons.grass_outlined),
+                            title: Text(crop.name),
+                            subtitle: Text('${crop.category} · ${crop.growthStage}'),
+                          );
+                        },
+                      ),
+                    ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Créer une culture',
-        onPressed: _createCrop,
+        onPressed: _isLoading ? null : _createCrop,
         child: const Icon(Icons.add),
       ),
     );
@@ -75,10 +121,9 @@ class _CreateCropDialogState extends State<_CreateCropDialog> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    final store = AgricultureStore.instance;
     Navigator.of(context).pop(
       CropData(
-        id: store.nextId(),
+        id: '',
         name: _name.text.trim(),
         category: _category,
         variety: _variety.text.trim(),

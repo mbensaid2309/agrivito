@@ -1,24 +1,28 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-from app.schemas.agriculture import Farm, FarmCreate, utc_now
-from app.services.agriculture.store import AgricultureStore, store
+from app.models.farm import Farm
+from app.schemas.agriculture import FarmCreate
+from app.services.agriculture.exceptions import ResourceConflictError
 
 
 class FarmService:
-    def __init__(self, data_store: AgricultureStore = store) -> None:
-        self.store = data_store
-
-    def create(self, payload: FarmCreate) -> Farm:
-        farm = Farm(
-            farm_id=str(uuid4()), **payload.model_dump(), created_at=utc_now()
-        )
-        self.store.farms[farm.farm_id] = farm
+    def create(self, db: Session, payload: FarmCreate) -> Farm:
+        farm = Farm(**payload.model_dump())
+        db.add(farm)
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            raise ResourceConflictError("Farm could not be created.") from error
+        db.refresh(farm)
         return farm
 
-    def list(self) -> list[Farm]:
-        return list(self.store.farms.values())
+    def list(self, db: Session) -> list[Farm]:
+        return list(db.scalars(select(Farm).order_by(Farm.created_at)))
 
-    def get(self, farm_id: str) -> Farm | None:
-        return self.store.farms.get(farm_id)
+    def get(self, db: Session, farm_id: str) -> Farm | None:
+        return db.get(Farm, farm_id)

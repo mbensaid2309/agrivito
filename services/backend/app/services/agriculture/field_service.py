@@ -1,27 +1,41 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-from app.schemas.agriculture import Field, FieldCreate, utc_now
-from app.services.agriculture.store import AgricultureStore, store
+from app.models.farm import Farm
+from app.models.field import Field
+from app.schemas.agriculture import FieldCreate
+from app.services.agriculture.exceptions import (
+    ResourceConflictError,
+    ResourceNotFoundError,
+)
 
 
 class FieldService:
-    def __init__(self, data_store: AgricultureStore = store) -> None:
-        self.store = data_store
-
-    def create(self, farm_id: str, payload: FieldCreate) -> Field:
-        field = Field(
-            field_id=str(uuid4()),
-            farm_id=farm_id,
-            **payload.model_dump(),
-            created_at=utc_now(),
-        )
-        self.store.fields[field.field_id] = field
+    def create(self, db: Session, farm_id: str, payload: FieldCreate) -> Field:
+        if db.get(Farm, farm_id) is None:
+            raise ResourceNotFoundError("Farm not found.")
+        field = Field(farm_id=farm_id, **payload.model_dump())
+        db.add(field)
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            raise ResourceConflictError("Field could not be created.") from error
+        db.refresh(field)
         return field
 
-    def list_for_farm(self, farm_id: str) -> list[Field]:
-        return [field for field in self.store.fields.values() if field.farm_id == farm_id]
+    def list_for_farm(self, db: Session, farm_id: str) -> list[Field]:
+        if db.get(Farm, farm_id) is None:
+            raise ResourceNotFoundError("Farm not found.")
+        statement = (
+            select(Field)
+            .where(Field.farm_id == farm_id)
+            .order_by(Field.created_at)
+        )
+        return list(db.scalars(statement))
 
-    def get(self, field_id: str) -> Field | None:
-        return self.store.fields.get(field_id)
+    def get(self, db: Session, field_id: str) -> Field | None:
+        return db.get(Field, field_id)

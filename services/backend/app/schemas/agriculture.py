@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field as PydanticField, field_validator
+from pydantic import BaseModel, ConfigDict, Field as PydanticField, field_validator
 
 UserType = Literal["farmer", "advisor", "cooperative_member", "unknown"]
 WaterAccess = Literal["yes", "no", "seasonal", "unknown"]
@@ -15,9 +15,12 @@ GrowthStage = Literal[
     "seedling", "vegetative", "flowering", "fruiting", "harvest", "post_harvest", "unknown"
 ]
 FieldCropStatus = Literal["active", "planned", "completed", "unknown"]
+AreaUnit = Literal["hectare", "square_meter", "acre", "unknown"]
 
 
 class AgricultureModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     @field_validator("*", mode="before")
     @classmethod
     def strip_text(cls, value: object) -> object:
@@ -45,7 +48,7 @@ class FarmCreate(AgricultureModel):
     region: str = PydanticField(min_length=1)
     locality: str = PydanticField(min_length=1)
     total_area: Optional[float] = PydanticField(default=None, gt=0)
-    area_unit: str = PydanticField(default="ha", min_length=1)
+    area_unit: AreaUnit = "unknown"
 
 
 class Farm(FarmCreate):
@@ -56,7 +59,7 @@ class Farm(FarmCreate):
 class FieldCreate(AgricultureModel):
     name: str = PydanticField(min_length=1)
     area: float = PydanticField(gt=0)
-    area_unit: str = PydanticField(default="ha", min_length=1)
+    area_unit: AreaUnit = "unknown"
     soil_type: Optional[str] = None
     water_access: WaterAccess = "unknown"
     irrigation_type: IrrigationType = "unknown"
