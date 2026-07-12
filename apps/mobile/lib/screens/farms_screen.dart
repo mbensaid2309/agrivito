@@ -1,56 +1,102 @@
 import 'package:flutter/material.dart';
 
-import '../services/agriculture_store.dart';
+import '../models/agriculture_models.dart';
+import '../services/agriculture_api_service.dart';
 import 'farm_detail_screen.dart';
 
 class FarmsScreen extends StatefulWidget {
-  const FarmsScreen({super.key});
+  const FarmsScreen({required this.api, super.key});
 
   static const routeName = '/farms';
+  final AgricultureApi api;
 
   @override
   State<FarmsScreen> createState() => _FarmsScreenState();
 }
 
 class _FarmsScreenState extends State<FarmsScreen> {
+  List<FarmData> _farms = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFarms();
+  }
+
+  Future<void> _loadFarms() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final farms = await widget.api.getFarms();
+      if (!mounted) return;
+      setState(() => _farms = farms);
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _createFarm() async {
-    final farm = await showDialog<FarmData>(
+    final draft = await showDialog<FarmData>(
       context: context,
       builder: (_) => const _CreateFarmDialog(),
     );
-    if (farm != null) {
-      setState(() => AgricultureStore.instance.farms.add(farm));
+    if (draft == null) {
+      return;
+    }
+    try {
+      final farm = await widget.api.createFarm(draft);
+      if (!mounted) return;
+      setState(() => _farms = [..._farms, farm]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exploitation enregistrée.')),
+      );
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final farms = AgricultureStore.instance.farms;
     return Scaffold(
       appBar: AppBar(title: const Text('Mes exploitations')),
-      body: farms.isEmpty
-          ? const Center(child: Text('Aucune exploitation enregistrée.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: farms.length,
-              itemBuilder: (context, index) {
-                final farm = farms[index];
-                return ListTile(
-                  leading: const Icon(Icons.agriculture_outlined),
-                  title: Text(farm.name),
-                  subtitle: Text('${farm.locality}, ${farm.region}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => FarmDetailScreen(farm: farm),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _ErrorState(message: _error!, onRetry: _loadFarms)
+              : _farms.isEmpty
+                  ? const Center(child: Text('Aucune exploitation enregistrée.'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _farms.length,
+                      itemBuilder: (context, index) {
+                        final farm = _farms[index];
+                        return ListTile(
+                          leading: const Icon(Icons.agriculture_outlined),
+                          title: Text(farm.name),
+                          subtitle: Text('${farm.locality}, ${farm.region}'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => FarmDetailScreen(
+                                farm: farm,
+                                api: widget.api,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
-            ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Créer une exploitation',
-        onPressed: _createFarm,
+        onPressed: _isLoading ? null : _createFarm,
         child: const Icon(Icons.add),
       ),
     );
@@ -89,10 +135,10 @@ class _CreateFarmDialogState extends State<_CreateFarmDialog> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    final store = AgricultureStore.instance;
     Navigator.of(context).pop(
       FarmData(
-        id: store.nextId(),
+        id: '',
+        userId: 'mobile-user',
         name: _name.text.trim(),
         country: _country.text.trim(),
         region: _region.text.trim(),
@@ -129,12 +175,16 @@ class _CreateFarmDialogState extends State<_CreateFarmDialog> {
               ),
               TextFormField(
                 controller: _locality,
-                decoration: const InputDecoration(labelText: 'Commune / localité'),
+                decoration: const InputDecoration(
+                  labelText: 'Commune / localité',
+                ),
                 validator: _required,
               ),
               TextFormField(
                 controller: _area,
-                decoration: const InputDecoration(labelText: 'Surface totale (ha)'),
+                decoration: const InputDecoration(
+                  labelText: 'Surface totale (hectares)',
+                ),
                 keyboardType: TextInputType.number,
               ),
             ],
@@ -148,6 +198,30 @@ class _CreateFarmDialogState extends State<_CreateFarmDialog> {
         ),
         FilledButton(onPressed: _submit, child: const Text('Créer')),
       ],
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Réessayer'),
+          ),
+        ],
+      ),
     );
   }
 }

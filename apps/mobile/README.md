@@ -4,9 +4,8 @@ Application Flutter du MVP Agrivito.
 
 ## Objectif
 
-Permettre un parcours agricole Sprint 3 simple pour saisir un profil, des
-exploitations, des parcelles et des cultures, tout en maintenant le mode
-decouverte Sprint 2.
+Connecter le parcours agricole Sprint 3 aux endpoints FastAPI persistants du
+Sprint 4, tout en maintenant le mode decouverte Sprint 2.
 
 ## Stack
 
@@ -59,10 +58,19 @@ flutter test
 
 ## Contexte agricole
 
-Les donnees agricoles sont gerees par une couche locale in-memory. L'utilisateur
-peut creer une exploitation, ajouter des parcelles, declarer des cultures et
-associer une culture principale a une parcelle. Cette couche reste volontairement
-simple en attendant la persistance backend PostgreSQL.
+Les ecrans agricoles utilisent une interface API injectable et un service HTTP.
+L'utilisateur peut creer un profil, une exploitation, des parcelles, des cultures
+et une association active. Les listes sont rechargees depuis FastAPI et les
+ecrans gerent chargement, etat vide, succes, validation et erreurs reseau/backend.
+
+Flux :
+
+```text
+Flutter -> FastAPI -> PostgreSQL
+```
+
+Flutter ne contient aucune connexion PostgreSQL, cle Supabase ou dependance
+`supabase_flutter`.
 
 ## Mode decouverte
 
@@ -95,5 +103,6 @@ http://127.0.0.1:8000
 - Pas d'historique persistant complet.
 - La session decouverte est locale et non persistante.
 - Les reponses discovery sont mockees cote backend.
-- Le contexte agricole mobile n'est pas persistant et est perdu au redemarrage.
-- Les formulaires agricoles ne sont pas encore connectes aux endpoints backend.
+- L'identifiant utilisateur reste mocke jusqu'a l'integration Cognito.
+- La modification d'un profil existant n'est pas encore exposee par l'API MVP.
+- Aucun acces direct a Supabase n'est present dans le mobile.

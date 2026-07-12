@@ -1,30 +1,69 @@
 import 'package:flutter/material.dart';
 
-import '../services/agriculture_store.dart';
+import '../models/agriculture_models.dart';
+import '../services/agriculture_api_service.dart';
 
 class FarmDetailScreen extends StatefulWidget {
-  const FarmDetailScreen({required this.farm, super.key});
+  const FarmDetailScreen({required this.farm, required this.api, super.key});
 
   final FarmData farm;
+  final AgricultureApi api;
 
   @override
   State<FarmDetailScreen> createState() => _FarmDetailScreenState();
 }
 
 class _FarmDetailScreenState extends State<FarmDetailScreen> {
+  List<FieldData> _fields = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFields();
+  }
+
+  Future<void> _loadFields() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final fields = await widget.api.getFields(widget.farm.id);
+      if (!mounted) return;
+      setState(() => _fields = fields);
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _createField() async {
-    final field = await showDialog<FieldData>(
+    final draft = await showDialog<FieldData>(
       context: context,
       builder: (_) => _CreateFieldDialog(farmId: widget.farm.id),
     );
-    if (field != null) {
-      setState(() => AgricultureStore.instance.fields.add(field));
+    if (draft == null) {
+      return;
+    }
+    try {
+      final field = await widget.api.createField(widget.farm.id, draft);
+      if (!mounted) return;
+      setState(() => _fields = [..._fields, field]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Parcelle enregistrée.')),
+      );
+    } on AgricultureApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final fields = AgricultureStore.instance.fieldsForFarm(widget.farm.id);
     return Scaffold(
       appBar: AppBar(title: Text(widget.farm.name)),
       body: ListView(
@@ -32,22 +71,34 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
         children: [
           Text('${widget.farm.locality}, ${widget.farm.region}'),
           if (widget.farm.totalArea != null)
-            Text('Surface totale : ${widget.farm.totalArea} ha'),
+            Text(
+              'Surface totale : ${widget.farm.totalArea} ${widget.farm.areaUnit}',
+            ),
           const SizedBox(height: 24),
           Text('Mes parcelles', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
-          if (fields.isEmpty) const Text('Aucune parcelle enregistrée.'),
-          for (final field in fields)
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_error != null) ...[
+            Text(_error!),
+            TextButton.icon(
+              onPressed: _loadFields,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Réessayer'),
+            ),
+          ],
+          if (!_isLoading && _error == null && _fields.isEmpty)
+            const Text('Aucune parcelle enregistrée.'),
+          for (final field in _fields)
             ListTile(
               leading: const Icon(Icons.landscape_outlined),
               title: Text(field.name),
               subtitle: Text(
-                '${field.area} ha · Eau : ${field.waterAccess} · ${field.irrigationType}',
+                '${field.area} ${field.areaUnit} · Eau : ${field.waterAccess} · ${field.irrigationType}',
               ),
             ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _createField,
+            onPressed: _isLoading ? null : _createField,
             icon: const Icon(Icons.add),
             label: const Text('Créer une parcelle'),
           ),
@@ -86,10 +137,9 @@ class _CreateFieldDialogState extends State<_CreateFieldDialog> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    final store = AgricultureStore.instance;
     Navigator.of(context).pop(
       FieldData(
-        id: store.nextId(),
+        id: '',
         farmId: widget.farmId,
         name: _name.text.trim(),
         area: double.parse(_area.text),
@@ -119,10 +169,11 @@ class _CreateFieldDialogState extends State<_CreateFieldDialog> {
               ),
               TextFormField(
                 controller: _area,
-                decoration: const InputDecoration(labelText: 'Surface (ha)'),
+                decoration: const InputDecoration(labelText: 'Surface (hectares)'),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    double.tryParse(value ?? '') == null ? 'Surface invalide' : null,
+                validator: (value) => double.tryParse(value ?? '') == null
+                    ? 'Surface invalide'
+                    : null,
               ),
               TextFormField(
                 controller: _soil,
