@@ -9,7 +9,7 @@ class DiscoverySession {
   factory DiscoverySession.create() {
     final now = DateTime.now();
     return DiscoverySession(
-      discoverySessionId: 'discovery-${now.millisecondsSinceEpoch}',
+      discoverySessionId: 'discovery-${now.microsecondsSinceEpoch}',
       createdAt: now,
     );
   }

@@ -1,17 +1,15 @@
 # Agrivito Backend
 
-Backend FastAPI du MVP Agrivito. Il porte la logique metier, expose l'API et isolera les futurs appels OpenAI afin que le mobile ne contacte jamais directement les services IA.
+Backend FastAPI du MVP Agrivito. Il porte la logique metier, construit le
+contexte agricole et isole les appels OpenAI afin que le mobile ne contacte
+jamais directement les services IA.
 
 ## Stack
 
-- Python FastAPI
-- SQLAlchemy
-- Psycopg
-- Alembic
-- PostgreSQL
-- Uvicorn
-- Pytest
-- Docker pour l'execution containerisee
+- Python FastAPI et Pydantic
+- SQLAlchemy, Psycopg, Alembic et PostgreSQL
+- SDK OpenAI, utilise uniquement en mode live
+- Uvicorn, Pytest et Docker
 
 ## Installation locale
 
@@ -23,17 +21,28 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Renseigner `DATABASE_URL` uniquement dans `.env`, avec une connexion fictive de
-ce format :
+Renseigner `DATABASE_URL` uniquement dans `.env`. Supabase est utilise uniquement
+comme hebergement PostgreSQL manage pour le MVP. Le backend est le seul composant
+autorise a acceder a cette base.
+
+Le diagnostic fonctionne sans cle externe avec :
 
 ```env
-DATABASE_URL=postgresql+psycopg://user:password@host:5432/database?sslmode=require
+AI_MODE=mock
+AI_PROVIDER=openai
+OPENAI_TIMEOUT_SECONDS=30
 ```
 
-Supabase est utilise uniquement comme hebergement PostgreSQL manage pour le MVP.
-Aucune cle ni aucun SDK Supabase n'est requis.
-La migration active RLS sur les tables du schema public sans politique d'acces
-public ; les donnees restent accessibles uniquement par la connexion backend.
+Pour activer un appel reel, definir uniquement dans l'environnement backend :
+
+```env
+AI_MODE=live
+OPENAI_API_KEY=replace-with-your-openai-api-key
+OPENAI_MODEL=replace-with-approved-model
+```
+
+Le mode live refuse le diagnostic si la cle ou le modele manque. Aucune valeur
+sensible ne doit etre loggee, affichee ou versionnee.
 
 ## Lancement local
 
@@ -42,24 +51,60 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Healthcheck :
+Verifier le backend :
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Reponse attendue :
+La documentation interactive est disponible sur `http://127.0.0.1:8000/docs`.
 
-```json
-{
-  "status": "ok",
-  "service": "agrivito-backend"
-}
+## Diagnostic texte Sprint 5
+
+```text
+POST /ai/diagnosis
 ```
 
-## API agricole Sprint 4
+La requete accepte une question, une langue et des identifiants optionnels de
+profil, exploitation, parcelle, culture et session decouverte. Le backend :
 
-Le backend expose les fondations metier suivantes :
+1. verifie les ressources et leurs relations ;
+2. construit le contexte depuis PostgreSQL ;
+3. appelle `MockAIProvider` ou `OpenAIProvider` ;
+4. parse et valide la sortie structuree ;
+5. applique les regles anti-hallucination ;
+6. calcule le Trust Score cote Agrivito ;
+7. retourne une reponse stable.
+
+Exemple :
+
+```bash
+curl -X POST http://127.0.0.1:8000/ai/diagnosis \
+  -H "content-type: application/json" \
+  -d '{"question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr","discovery_session_id":"temporary-session-id"}'
+```
+
+La reponse distingue resume, observations, hypotheses, recommandations,
+questions complementaires, precautions et Trust Score. Les modes supportes sont
+`reliable`, `hypotheses`, `questions_required` et `refusal`.
+
+Le provider ne fournit jamais le Trust Score final. Les sorties vides ou
+invalides, timeouts, rate limits et indisponibilites deviennent des erreurs API
+controlees. Le prompt interdit notamment d'inventer une photo, une meteo, une
+analyse de sol ou une maladie confirmee.
+
+## Mode decouverte
+
+L'endpoint historique reste disponible :
+
+```text
+POST /discovery/question
+```
+
+Il utilise le meme orchestrateur tout en conservant son contrat. Le compteur
+backend est non persistant et refuse une quatrieme question pour une meme session.
+
+## API agricole Sprint 4
 
 ```text
 GET  /farmer/profile
@@ -77,18 +122,13 @@ POST /fields/{field_id}/crop
 GET  /fields/{field_id}/crop
 ```
 
-Les donnees agricoles sont persistantes dans PostgreSQL. Le backend est le seul
-composant autorise a communiquer avec la base.
-
 ## Migrations
-
-Appliquer la migration :
 
 ```bash
 alembic upgrade head
 ```
 
-Verifier localement la reversibilite sur une base de test uniquement :
+Verifier la reversibilite uniquement sur une base de test isolee :
 
 ```bash
 alembic downgrade -1
@@ -98,96 +138,40 @@ alembic upgrade head
 Ne jamais executer un downgrade destructif sur une base partagee sans sauvegarde
 et validation explicite.
 
-Question decouverte :
-
-```bash
-curl -X POST http://127.0.0.1:8000/discovery/question \
-  -H "content-type: application/json" \
-  -d '{"session_id":"temporary-session-id","question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
-```
-
-Reponse attendue :
-
-```json
-{
-  "answer": {
-    "summary": "Les feuilles jaunes peuvent avoir plusieurs causes.",
-    "response": "Cela peut venir d'un manque d'eau, d'un excès d'eau, d'une carence ou d'une maladie. Pour être plus fiable, Agrivito doit connaître le contexte.",
-    "trust_score": {
-      "score": 60,
-      "level": "moyen",
-      "explanation": "Réponse générale sans photo ni contexte de culture."
-    },
-    "follow_up_questions": [
-      "Depuis combien de temps les feuilles jaunissent ?",
-      "Les feuilles jaunes sont-elles en bas ou en haut de la plante ?",
-      "À quelle fréquence arrosez-vous ?"
-    ],
-    "precautions": [
-      "Ne pas appliquer de traitement sans diagnostic plus précis.",
-      "Ajouter une photo dans un prochain sprint pour améliorer l'analyse."
-    ]
-  },
-  "usage": {
-    "questions_used": 1,
-    "questions_limit": 3,
-    "remaining": 2
-  }
-}
-```
-
 ## Tests
 
 ```bash
+export AI_MODE=mock
 pytest
 ```
 
-Les tests locaux utilisent SQLite en memoire. GitHub Actions utilise un service
-PostgreSQL 16 isole, applique `alembic upgrade head`, puis execute Pytest.
+Les tests locaux utilisent SQLite en memoire. GitHub Actions utilise PostgreSQL
+16, applique `alembic upgrade head`, force `AI_MODE=mock`, puis execute Pytest.
+Aucun appel OpenAI reel n'est effectue.
 
-Tests presents :
-
-- chargement de l'application FastAPI ;
-- endpoint `GET /health` ;
-- endpoint `POST /discovery/question` ;
-- validation des requetes discovery invalides ;
-- creation et lecture du profil agricole ;
-- creation et lecture des exploitations, parcelles et cultures ;
-- association d'une culture principale a une parcelle ;
-- validation des champs agricoles et erreurs sur identifiants inexistants ;
-- configuration minimale ;
-- Trust Score MVP mocke et niveaux associes.
+La couverture inclut le healthcheck, le diagnostic avec et sans contexte, le
+mode decouverte, les endpoints agricoles, le parser, les providers, les erreurs
+controlees, les seuils du Trust Score et les migrations.
 
 ## Docker
 
-Construire l'image :
-
 ```bash
 docker build -t agrivito-backend .
-```
-
-Demarrer le container :
-
-```bash
 docker run --rm -p 8000:8000 --env-file .env agrivito-backend
-```
-
-Verifier le healthcheck :
-
-```bash
 curl http://127.0.0.1:8000/health
 ```
 
 ## Configuration
 
-Les variables attendues sont documentees dans `.env.example`. `DATABASE_URL` est
-lue depuis l'environnement. Aucun secret reel ne doit etre versionne ou affiche.
+Les variables sont documentees dans `.env.example` : `DATABASE_URL`,
+`OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT_SECONDS`, `AI_PROVIDER` et
+`AI_MODE`. Le fichier `.env` reel reste ignore par Git.
 
 ## Limites connues
 
-- Aucun appel OpenAI reel.
-- Cognito, S3, AWS RDS PostgreSQL et App Runner restent des cibles futures.
-- Le Trust Score discovery retourne un score prudent mocke.
-- La limite discovery est preparee sans base de donnees au Sprint 2.
-- Supabase n'est utilise que pour heberger PostgreSQL pendant le MVP.
-- Aucun deploiement AWS n'est inclus dans le Sprint 4.
+- Pas de diagnostic photo, Vision, voix, RAG ou historique complet.
+- Les appels OpenAI reels necessitent une configuration live explicite.
+- Cognito, S3, AWS RDS et App Runner ne sont pas integres.
+- Le compteur discovery est volontairement non persistant.
+- Supabase n'heberge que PostgreSQL pendant le MVP.
+- Aucun deploiement AWS n'est inclus dans le Sprint 5.

@@ -2,21 +2,23 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 4
+## Objectif Sprint 5
 
-Le Sprint 4 rend le contexte agricole persistant et connecte Flutter au backend :
+Le Sprint 5 ajoute la premiere capacite de diagnostic texte structure :
 
-- PostgreSQL heberge temporairement par Supabase ;
-- SQLAlchemy et Psycopg pour l'acces aux donnees ;
-- Alembic pour les migrations ;
-- services HTTP Flutter vers FastAPI ;
-- etats loading, vide, succes et erreur ;
-- maintien des fonctionnalites des Sprints 1 a 3.
+- endpoint `POST /ai/diagnosis` ;
+- AI Orchestrator et abstraction de provider ;
+- `MockAIProvider` sans reseau et `OpenAIProvider` cote backend uniquement ;
+- contexte agricole recupere depuis PostgreSQL ;
+- sortie validee et Trust Score calcule par Agrivito ;
+- Chat Flutter avec reponse structuree et gestion des erreurs ;
+- maintien du mode decouverte limite a trois questions ;
+- maintien des fonctionnalites des Sprints 1 a 4.
 
 Architecture :
 
 ```text
-Flutter -> HTTP / JSON -> FastAPI -> SQLAlchemy / Psycopg -> PostgreSQL
+Flutter -> FastAPI -> AI Orchestrator -> PostgreSQL + provider IA -> Trust Score
 ```
 
 Supabase fournit uniquement l'hebergement PostgreSQL du MVP. Le mobile ne
@@ -43,7 +45,8 @@ communique jamais directement avec Supabase et aucun SDK Supabase n'est utilise.
 agrivito/
  ├── docs/
  ├── prompts/
- │    └── PROMPT-CODEX-SPRINT-1.md
+ │    ├── PROMPT-CODEX-SPRINT-1.md
+ │    └── PROMPT-CODEX-SPRINT-5.md
  ├── apps/
  │    └── mobile/
  ├── services/
@@ -65,6 +68,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # Renseigner DATABASE_URL uniquement dans .env
+# AI_MODE=mock fonctionne sans cle OpenAI
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
@@ -81,6 +85,14 @@ Question en mode decouverte :
 curl -X POST http://127.0.0.1:8000/discovery/question \
   -H "content-type: application/json" \
   -d '{"session_id":"temporary-session-id","question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
+```
+
+Diagnostic texte structure :
+
+```bash
+curl -X POST http://127.0.0.1:8000/ai/diagnosis \
+  -H "content-type: application/json" \
+  -d '{"question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr","discovery_session_id":"temporary-session-id"}'
 ```
 
 Les endpoints agricoles sont documentes dans `services/backend/README.md` et
@@ -123,14 +135,16 @@ flutter test
 - Ne jamais stocker de secret dans Git.
 - Ne jamais appeler OpenAI depuis le mobile.
 - Garder les evolutions limitees au sprint valide.
-- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 4.
+- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 5.
 
 ## Limites connues
 
-- L'authentification Cognito, S3, RDS et les appels OpenAI reels sont prepares mais non finalises.
-- Le mode decouverte est limite a 3 questions en session locale mobile.
-- Le backend discovery retourne une reponse mockee prudente, sans appel OpenAI reel.
+- L'authentification Cognito, S3 et AWS RDS ne sont pas integres.
+- Le mode decouverte est limite a trois questions et n'est pas persiste.
+- `AI_MODE=mock` est le mode local et CI sans appel externe ; `AI_MODE=live`
+  exige une cle et un modele OpenAI uniquement dans l'environnement backend.
+- Aucun diagnostic photo, Vision, voix, RAG ou historique complet n'est inclus.
 - Supabase est utilise uniquement comme PostgreSQL manage temporaire ; la cible
   cloud reste AWS RDS PostgreSQL.
 - L'identite mobile reste mockee tant que Cognito n'est pas integre.
-- La CI mobile effectue une verification Flutter minimale sans deploiement.
+- Aucun deploiement automatique n'est inclus.

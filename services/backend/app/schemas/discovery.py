@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.trust_score import TrustScoreResponse
@@ -6,7 +8,7 @@ from app.schemas.trust_score import TrustScoreResponse
 class DiscoveryQuestionRequest(BaseModel):
     session_id: str = Field(min_length=1)
     question: str = Field(min_length=1)
-    language: str = "fr"
+    language: Literal["fr", "ar", "darija", "en"] = "fr"
 
     @field_validator("session_id", "question", "language")
     @classmethod

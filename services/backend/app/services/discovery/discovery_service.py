@@ -1,3 +1,6 @@
+from sqlalchemy.orm import Session
+
+from app.schemas.ai_diagnosis import AIDiagnosisRequest
 from app.schemas.discovery import (
     DiscoveryAnswer,
     DiscoveryQuestionRequest,
@@ -5,43 +8,55 @@ from app.schemas.discovery import (
     DiscoveryUsage,
 )
 from app.schemas.trust_score import TrustScoreResponse
+from app.services.ai.orchestrator import AIOrchestrator
+
+_LEGACY_TRUST_LEVELS = {
+    "high": "élevé",
+    "medium": "moyen",
+    "low": "faible",
+    "insufficient": "insuffisant",
+}
 
 
 class DiscoveryService:
     questions_limit = 3
 
+    def __init__(self, orchestrator: AIOrchestrator) -> None:
+        self._orchestrator = orchestrator
+
     def answer_question(
-        self, request: DiscoveryQuestionRequest
+        self, db: Session, request: DiscoveryQuestionRequest
     ) -> DiscoveryQuestionResponse:
-        questions_used = 1
-        remaining = max(self.questions_limit - questions_used, 0)
+        result = self._orchestrator.diagnose(
+            db,
+            AIDiagnosisRequest(
+                question=request.question,
+                language=request.language,
+                discovery_session_id=request.session_id,
+            ),
+        )
+        diagnosis = result.diagnosis
+        response_parts = [
+            hypothesis.explanation for hypothesis in diagnosis.hypotheses
+        ] + diagnosis.recommendations
+        response = " ".join(response_parts) or diagnosis.summary
+        usage = result.usage
 
         return DiscoveryQuestionResponse(
             answer=DiscoveryAnswer(
-                summary="Les feuilles jaunes peuvent avoir plusieurs causes.",
-                response=(
-                    "Cela peut venir d'un manque d'eau, d'un excès d'eau, "
-                    "d'une carence ou d'une maladie. Pour être plus fiable, "
-                    "Agrivito doit connaître le contexte."
-                ),
+                summary=diagnosis.summary,
+                response=response,
                 trust_score=TrustScoreResponse(
-                    score=60,
-                    level="moyen",
-                    explanation="Réponse générale sans photo ni contexte de culture.",
+                    score=diagnosis.trust_score.score,
+                    level=_LEGACY_TRUST_LEVELS[diagnosis.trust_score.level],
+                    explanation=diagnosis.trust_score.explanation,
                 ),
-                follow_up_questions=[
-                    "Depuis combien de temps les feuilles jaunissent ?",
-                    "Les feuilles jaunes sont-elles en bas ou en haut de la plante ?",
-                    "À quelle fréquence arrosez-vous ?",
-                ],
-                precautions=[
-                    "Ne pas appliquer de traitement sans diagnostic plus précis.",
-                    "Ajouter une photo dans un prochain sprint pour améliorer l'analyse.",
-                ],
+                follow_up_questions=diagnosis.follow_up_questions,
+                precautions=diagnosis.precautions,
             ),
             usage=DiscoveryUsage(
-                questions_used=questions_used,
-                questions_limit=self.questions_limit,
-                remaining=remaining,
+                questions_used=usage.questions_used or 0,
+                questions_limit=usage.questions_limit or self.questions_limit,
+                remaining=usage.remaining or 0,
             ),
         )

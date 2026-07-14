@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'services/agriculture_api_service.dart';
+import 'services/ai_diagnosis_api_service.dart';
 import 'screens/agricultural_profile_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/crops_screen.dart';
@@ -22,10 +23,12 @@ class AgrivitoApp extends StatelessWidget {
     super.key,
     this.enableHealthCheck = true,
     this.agricultureApi,
+    this.diagnosisApi,
   });
 
   final bool enableHealthCheck;
   final AgricultureApi? agricultureApi;
+  final AIDiagnosisApi? diagnosisApi;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,9 @@ class AgrivitoApp extends StatelessWidget {
         HomeScreen.routeName: (_) => HomeScreen(
               enableHealthCheck: enableHealthCheck,
             ),
-        ChatScreen.routeName: (_) => const ChatScreen(),
+        ChatScreen.routeName: (_) => ChatScreen(
+              diagnosisApi: diagnosisApi ?? const AIDiagnosisApiService(),
+            ),
         DiagnosticResultScreen.routeName: (_) => const DiagnosticResultScreen(),
         LoginScreen.routeName: (_) => const LoginScreen(),
         RegisterScreen.routeName: (_) => const RegisterScreen(),

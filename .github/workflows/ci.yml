@@ -25,6 +25,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/agrivito_test
+      AI_MODE: mock
     defaults:
       run:
         working-directory: services/backend
