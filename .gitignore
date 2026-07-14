@@ -23,6 +23,7 @@ env/
 
 # FastAPI / local runtime
 *.log
+services/backend/data/media/
 
 # Flutter / Dart
 .dart_tool/

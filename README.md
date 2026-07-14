@@ -2,23 +2,24 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 5
+## Objectif Sprint 6
 
-Le Sprint 5 ajoute la premiere capacite de diagnostic texte structure :
+Le Sprint 6 ajoute la fondation d'upload photo sans diagnostic visuel :
 
-- endpoint `POST /ai/diagnosis` ;
-- AI Orchestrator et abstraction de provider ;
-- `MockAIProvider` sans reseau et `OpenAIProvider` cote backend uniquement ;
-- contexte agricole recupere depuis PostgreSQL ;
-- sortie validee et Trust Score calcule par Agrivito ;
-- Chat Flutter avec reponse structuree et gestion des erreurs ;
-- maintien du mode decouverte limite a trois questions ;
-- maintien des fonctionnalites des Sprints 1 a 4.
+- capture ou selection d'une photo dans Flutter ;
+- previsualisation, remplacement, annulation et upload multipart ;
+- validation reelle JPEG, PNG, WebP et limite de 10 MB ;
+- abstraction backend `MediaStorageProvider` ;
+- stockage local pour le developpement et la CI ;
+- provider S3 prive prepare sans appel AWS reel en CI ;
+- table PostgreSQL `media` pour les metadonnees uniquement ;
+- maintien des fonctionnalites des Sprints 1 a 5.
 
 Architecture :
 
 ```text
-Flutter -> FastAPI -> AI Orchestrator -> PostgreSQL + provider IA -> Trust Score
+Flutter -> FastAPI -> MediaStorageProvider -> local ou S3
+                   -> PostgreSQL (metadonnees)
 ```
 
 Supabase fournit uniquement l'hebergement PostgreSQL du MVP. Le mobile ne
@@ -33,7 +34,7 @@ communique jamais directement avec Supabase et aucun SDK Supabase n'est utilise.
 | Cloud cible | AWS |
 | Acceleration mobile/cloud | AWS Amplify |
 | Authentification | Amazon Cognito via Amplify Auth |
-| Stockage media | Amazon S3 via Amplify Storage |
+| Stockage media | Local en developpement, Amazon S3 prive via FastAPI en cible |
 | Base de donnees | Amazon RDS PostgreSQL |
 | IA | OpenAI API via backend uniquement |
 | Hebergement backend | AWS App Runner |
@@ -46,7 +47,8 @@ agrivito/
  ├── docs/
  ├── prompts/
  │    ├── PROMPT-CODEX-SPRINT-1.md
- │    └── PROMPT-CODEX-SPRINT-5.md
+ │    ├── PROMPT-CODEX-SPRINT-5.md
+ │    └── PROMPT-CODEX-SPRINT-6.md
  ├── apps/
  │    └── mobile/
  ├── services/
@@ -69,6 +71,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Renseigner DATABASE_URL uniquement dans .env
 # AI_MODE=mock fonctionne sans cle OpenAI
+# MEDIA_STORAGE_PROVIDER=local ne requiert aucun secret AWS
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
@@ -94,6 +97,17 @@ curl -X POST http://127.0.0.1:8000/ai/diagnosis \
   -H "content-type: application/json" \
   -d '{"question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr","discovery_session_id":"temporary-session-id"}'
 ```
+
+Upload photo local :
+
+```bash
+curl -X POST http://127.0.0.1:8000/media/upload \
+  -F "file=@/chemin/vers/tomate.jpg;type=image/jpeg" \
+  -F "discovery_session_id=temporary-photo-session"
+```
+
+Les metadonnees sont relues avec `GET /media/{media_id}`. Le contenu binaire
+n'est jamais stocke dans PostgreSQL et aucune URL publique n'est generee.
 
 Les endpoints agricoles sont documentes dans `services/backend/README.md` et
 disponibles dans la documentation interactive FastAPI sur `/docs`.
@@ -135,15 +149,17 @@ flutter test
 - Ne jamais stocker de secret dans Git.
 - Ne jamais appeler OpenAI depuis le mobile.
 - Garder les evolutions limitees au sprint valide.
-- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 5.
+- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 6.
 
 ## Limites connues
 
-- L'authentification Cognito, S3 et AWS RDS ne sont pas integres.
+- L'authentification Cognito et AWS RDS ne sont pas integres.
 - Le mode decouverte est limite a trois questions et n'est pas persiste.
+- Le mode decouverte photo est limite a une photo par session en memoire.
+- Le stockage local est utilise par defaut ; S3 est prepare mais non deploye.
 - `AI_MODE=mock` est le mode local et CI sans appel externe ; `AI_MODE=live`
   exige une cle et un modele OpenAI uniquement dans l'environnement backend.
-- Aucun diagnostic photo, Vision, voix, RAG ou historique complet n'est inclus.
+- Aucun diagnostic photo, OpenAI Vision, voix, RAG ou historique complet n'est inclus.
 - Supabase est utilise uniquement comme PostgreSQL manage temporaire ; la cible
   cloud reste AWS RDS PostgreSQL.
 - L'identite mobile reste mockee tant que Cognito n'est pas integre.

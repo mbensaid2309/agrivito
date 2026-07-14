@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'services/agriculture_api_service.dart';
 import 'services/ai_diagnosis_api_service.dart';
+import 'services/media_api_service.dart';
+import 'services/media_picker_service.dart';
 import 'screens/agricultural_profile_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/crops_screen.dart';
@@ -12,6 +14,7 @@ import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/photo_upload_screen.dart';
 import 'screens/register_screen.dart';
 
 void main() {
@@ -24,11 +27,15 @@ class AgrivitoApp extends StatelessWidget {
     this.enableHealthCheck = true,
     this.agricultureApi,
     this.diagnosisApi,
+    this.mediaApi,
+    this.mediaPicker,
   });
 
   final bool enableHealthCheck;
   final AgricultureApi? agricultureApi;
   final AIDiagnosisApi? diagnosisApi;
+  final MediaApi? mediaApi;
+  final MediaPicker? mediaPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +65,10 @@ class AgrivitoApp extends StatelessWidget {
         FarmsScreen.routeName: (_) => FarmsScreen(api: api),
         CropsScreen.routeName: (_) => CropsScreen(api: api),
         FieldCropScreen.routeName: (_) => FieldCropScreen(api: api),
+        PhotoUploadScreen.routeName: (_) => PhotoUploadScreen(
+              mediaApi: mediaApi ?? const MediaApiService(),
+              mediaPicker: mediaPicker ?? ImagePickerMediaPicker(),
+            ),
       },
     );
   }

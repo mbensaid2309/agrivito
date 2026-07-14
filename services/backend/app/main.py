@@ -10,6 +10,7 @@ from app.api.farms import router as farms_router
 from app.api.field_crops import router as field_crops_router
 from app.api.fields import router as fields_router
 from app.api.health import router as health_router
+from app.api.media import router as media_router
 from app.core.config import get_settings
 from app.db.database import DatabaseConfigurationError
 from app.services.agriculture.exceptions import (
@@ -24,6 +25,12 @@ from app.services.ai.exceptions import (
     AIProviderUnavailableError,
     AIServiceError,
     DiscoveryLimitReachedError,
+)
+from app.services.media.exceptions import (
+    MediaDiscoveryLimitReachedError,
+    MediaPersistenceError,
+    MediaStorageUnavailableError,
+    MediaValidationError,
 )
 
 
@@ -43,6 +50,7 @@ def create_app() -> FastAPI:
     application.include_router(fields_router)
     application.include_router(crops_router)
     application.include_router(field_crops_router)
+    application.include_router(media_router)
 
     @application.exception_handler(ResourceNotFoundError)
     async def resource_not_found_handler(
@@ -79,6 +87,34 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             content={"detail": error.public_message},
+        )
+
+    @application.exception_handler(MediaValidationError)
+    async def media_validation_handler(
+        request: Request, error: MediaValidationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=error.status_code,
+            content={"detail": error.public_message},
+        )
+
+    @application.exception_handler(MediaDiscoveryLimitReachedError)
+    async def media_discovery_limit_handler(
+        request: Request, error: MediaDiscoveryLimitReachedError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": error.public_message},
+        )
+
+    @application.exception_handler(MediaStorageUnavailableError)
+    @application.exception_handler(MediaPersistenceError)
+    async def media_unavailable_handler(
+        request: Request, error: Exception
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": getattr(error, "public_message", "Media unavailable.")},
         )
 
     @application.exception_handler(AIProviderTimeoutError)
