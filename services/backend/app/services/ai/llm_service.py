@@ -1,5 +1,11 @@
-class LLMService:
-    """Placeholder for future OpenAI LLM calls from the backend only."""
+from app.services.ai.provider import AIProvider, AIProviderRequest
 
-    def generate_response(self) -> None:
-        raise NotImplementedError("LLM integration is out of scope for Sprint 1.")
+
+class LLMService:
+    """Compatibility facade delegating text generation to the active provider."""
+
+    def __init__(self, provider: AIProvider) -> None:
+        self._provider = provider
+
+    def generate_response(self, request: AIProviderRequest) -> object:
+        return self._provider.generate_diagnosis(request)

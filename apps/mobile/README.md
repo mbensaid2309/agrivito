@@ -1,17 +1,17 @@
 # Agrivito Mobile
 
-Application Flutter du MVP Agrivito.
+Application Flutter mobile-first du MVP Agrivito.
 
-## Objectif
+## Objectif Sprint 5
 
-Connecter le parcours agricole Sprint 3 aux endpoints FastAPI persistants du
-Sprint 4, tout en maintenant le mode decouverte Sprint 2.
+Permettre de poser une question agricole et d'afficher le diagnostic texte
+structure retourne par FastAPI, tout en maintenant le contexte agricole
+persistant et le mode decouverte.
 
 ## Stack
 
-- Flutter
-- Dart
-- package `http` pour appeler le backend
+- Flutter et Dart
+- package `http` pour appeler uniquement le backend Agrivito
 
 ## Installation
 
@@ -22,48 +22,70 @@ flutter pub get
 
 ## Lancement local
 
-Avec backend local sur la machine :
+Avec le backend sur la machine :
 
 ```bash
 flutter run --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-Avec emulateur Android :
+Avec un emulateur Android :
 
 ```bash
 flutter run --dart-define=AGRIVITO_API_BASE_URL=http://10.0.2.2:8000
 ```
 
-## Tests et verification
+## Tests et analyse
 
 ```bash
 flutter analyze
 flutter test
 ```
 
+Les services HTTP sont injectables. Les tests utilisent des implementations
+factices et n'appellent ni le backend ni OpenAI.
+
+## Diagnostic texte
+
+Le Chat appelle uniquement :
+
+```text
+POST /ai/diagnosis
+```
+
+Le payload contient la question, la langue, la session decouverte et les
+identifiants agricoles lorsqu'ils sont disponibles. L'ecran affiche separement :
+
+- resume ;
+- observations ;
+- hypotheses ;
+- recommandations ;
+- questions complementaires ;
+- precautions ;
+- niveau et explication de confiance.
+
+Les etats geres sont idle, chargement, succes, validation, erreur reseau, erreur
+provider, informations insuffisantes et limite decouverte. Les couleurs ne sont
+pas le seul indicateur du niveau de confiance.
+
+Le mobile ne calcule jamais le Trust Score et ne contient ni prompt systeme,
+ni cle OpenAI, ni reponse brute du fournisseur.
+
 ## Ecrans
 
 - Home
-- Chat avec mode decouverte
+- Chat avec diagnostic texte et mode decouverte
 - Diagnostic Result
-- Login prepare pour Cognito / Amplify
-- Register prepare pour Cognito / Amplify
-- History
-- Profile
+- Login et Register prepares pour Cognito / Amplify
+- History et Profile
 - Profil agricole
-- Mes exploitations et detail d'exploitation
-- Creation et liste des parcelles
-- Mes cultures
+- Exploitations, parcelles et cultures
 - Association culture / parcelle
 
 ## Contexte agricole
 
-Les ecrans agricoles utilisent une interface API injectable et un service HTTP.
-L'utilisateur peut creer un profil, une exploitation, des parcelles, des cultures
-et une association active. Les listes sont rechargees depuis FastAPI et les
-ecrans gerent chargement, etat vide, succes, validation et erreurs reseau/backend.
-
-Flux :
+Les ecrans agricoles utilisent FastAPI pour creer et relire profil, exploitation,
+parcelles, cultures et association active. Ils gerent chargement, etat vide,
+succes, validation et erreurs reseau/backend.
 
 ```text
 Flutter -> FastAPI -> PostgreSQL
@@ -74,35 +96,23 @@ Flutter ne contient aucune connexion PostgreSQL, cle Supabase ou dependance
 
 ## Mode decouverte
 
-Le mode decouverte fonctionne sans compte.
-
-- Une session locale est creee automatiquement.
-- L'utilisateur peut poser jusqu'a 3 questions.
-- Le Chat appelle uniquement le backend FastAPI via `POST /discovery/question`.
+- Une session locale non persistante est creee automatiquement.
+- L'utilisateur peut poser jusqu'a trois questions.
+- Le Chat utilise `POST /ai/diagnosis` avec l'identifiant de session.
+- L'ancien endpoint `POST /discovery/question` reste disponible cote backend.
+- Apres la limite, l'application invite a creer un compte.
 - Le mobile n'appelle jamais OpenAI directement.
-- Apres 3 questions, l'application invite a creer un compte plus tard.
 
 ## Configuration backend
 
-L'URL backend est configuree par :
-
-```text
-AGRIVITO_API_BASE_URL
-```
-
-Par defaut, l'application utilise :
-
-```text
-http://127.0.0.1:8000
-```
+L'URL est centralisee dans `AGRIVITO_API_BASE_URL`. Sa valeur locale par defaut
+est `http://127.0.0.1:8000`.
 
 ## Limites connues
 
 - Pas d'authentification Cognito effective.
-- Pas d'appel OpenAI depuis le mobile.
 - Pas d'historique persistant complet.
-- La session decouverte est locale et non persistante.
-- Les reponses discovery sont mockees cote backend.
-- L'identifiant utilisateur reste mocke jusqu'a l'integration Cognito.
-- La modification d'un profil existant n'est pas encore exposee par l'API MVP.
-- Aucun acces direct a Supabase n'est present dans le mobile.
+- Le choix mock ou live est entierement decide par le backend.
+- L'identifiant utilisateur reste mocke avant Cognito.
+- Aucun diagnostic photo, voix ou RAG n'est inclus.
+- Aucun acces direct a OpenAI ou Supabase n'est present dans le mobile.

@@ -16,7 +16,7 @@ class ProfileScreen extends StatelessWidget {
           children: [
             CircleAvatar(radius: 32, child: Icon(Icons.person_outline)),
             SizedBox(height: 16),
-            Text('Profil utilisateur Sprint 1'),
+            Text('Profil utilisateur Agrivito'),
             SizedBox(height: 8),
             Text('Cognito via Amplify Auth sera integre dans un sprint futur.'),
           ],

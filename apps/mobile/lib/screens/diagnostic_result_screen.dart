@@ -8,22 +8,23 @@ class DiagnosticResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnostic Result')),
+      appBar: AppBar(title: const Text('Resultat du diagnostic')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: const [
           Text(
-            'Trust Score',
+            'Diagnostic Agrivito',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           SizedBox(height: 8),
           ListTile(
-            leading: Icon(Icons.speed_outlined),
-            title: Text('70 / 100'),
-            subtitle: Text('Niveau moyen - Score provisoire MVP.'),
+            leading: Icon(Icons.chat_outlined),
+            title: Text('Diagnostic texte structure'),
+            subtitle: Text(
+              'Les resultats generes depuis le Chat apparaissent directement '
+              'dans la conversation.',
+            ),
           ),
-          SizedBox(height: 16),
-          Text('Le diagnostic IA reel sera implemente dans un sprint ulterieur.'),
         ],
       ),
     );

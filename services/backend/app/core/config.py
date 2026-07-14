@@ -17,6 +17,10 @@ class Settings:
     aws_cognito_client_id: str = ""
     database_url: str = ""
     openai_api_key: str = ""
+    openai_model: str = ""
+    openai_timeout_seconds: float = 30.0
+    ai_provider: str = "openai"
+    ai_mode: str = "mock"
     log_level: str = "INFO"
 
 
@@ -30,6 +34,22 @@ def load_settings() -> Settings:
     if not app_name:
         raise ValueError("APP_NAME must not be empty.")
 
+    timeout_value = _read_env("OPENAI_TIMEOUT_SECONDS", "30") or "30"
+    try:
+        openai_timeout_seconds = float(timeout_value)
+    except ValueError as error:
+        raise ValueError("OPENAI_TIMEOUT_SECONDS must be a number.") from error
+    if openai_timeout_seconds <= 0:
+        raise ValueError("OPENAI_TIMEOUT_SECONDS must be greater than zero.")
+
+    ai_provider = _read_env("AI_PROVIDER", "openai").lower() or "openai"
+    if ai_provider != "openai":
+        raise ValueError("AI_PROVIDER must be 'openai'.")
+
+    ai_mode = _read_env("AI_MODE", "mock").lower() or "mock"
+    if ai_mode not in {"mock", "live"}:
+        raise ValueError("AI_MODE must be 'mock' or 'live'.")
+
     return Settings(
         app_env=_read_env("APP_ENV", "local") or "local",
         app_name=app_name,
@@ -39,6 +59,10 @@ def load_settings() -> Settings:
         aws_cognito_client_id=_read_env("AWS_COGNITO_CLIENT_ID"),
         database_url=_read_env("DATABASE_URL"),
         openai_api_key=_read_env("OPENAI_API_KEY"),
+        openai_model=_read_env("OPENAI_MODEL"),
+        openai_timeout_seconds=openai_timeout_seconds,
+        ai_provider=ai_provider,
+        ai_mode=ai_mode,
         log_level=_read_env("LOG_LEVEL", "INFO") or "INFO",
     )
 

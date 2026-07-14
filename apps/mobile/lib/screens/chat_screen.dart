@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../services/discovery_api_service.dart';
+import '../models/ai_diagnosis_models.dart';
+import '../services/ai_diagnosis_api_service.dart';
 import '../services/discovery_session.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -8,19 +9,38 @@ import 'register_screen.dart';
 class ChatScreen extends StatefulWidget {
   static const routeName = '/chat';
 
-  const ChatScreen({super.key});
+  const ChatScreen({
+    super.key,
+    required this.diagnosisApi,
+    this.diagnosisContext = const AIDiagnosisContext(),
+  });
+
+  final AIDiagnosisApi diagnosisApi;
+  final AIDiagnosisContext diagnosisContext;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
+enum ChatDiagnosisState {
+  idle,
+  loading,
+  success,
+  validationError,
+  networkError,
+  providerError,
+  insufficientInformation,
+  discoveryLimitReached,
+}
+
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _questionController = TextEditingController();
-  final DiscoveryApiService _apiService = const DiscoveryApiService();
   DiscoverySession _session = DiscoverySession.create();
-  DiscoveryAnswerView? _answer;
-  String? _error;
-  bool _isLoading = false;
+  AIDiagnosisResponseData? _answer;
+  String? _errorMessage;
+  ChatDiagnosisState _state = ChatDiagnosisState.idle;
+
+  bool get _isLoading => _state == ChatDiagnosisState.loading;
 
   @override
   void dispose() {
@@ -32,69 +52,89 @@ class _ChatScreenState extends State<ChatScreen> {
     final question = _questionController.text.trim();
     if (question.isEmpty) {
       setState(() {
-        _error = 'Saisissez une question agricole avant d envoyer.';
+        _state = ChatDiagnosisState.validationError;
+        _errorMessage = 'Saisissez une question agricole avant de continuer.';
       });
       return;
     }
-
     if (!_session.hasRemainingQuestions) {
-      setState(() {
-        _error =
-            'Vous avez atteint la limite du mode découverte. Créez un compte pour continuer plus tard.';
-      });
+      _showDiscoveryLimit();
       return;
     }
 
     setState(() {
-      _isLoading = true;
-      _error = null;
+      _state = ChatDiagnosisState.loading;
+      _errorMessage = null;
     });
 
     try {
-      final payload = await _apiService.askQuestion(
-        sessionId: _session.discoverySessionId,
+      final result = await widget.diagnosisApi.diagnose(
         question: question,
+        language: 'fr',
+        discoverySessionId: _session.discoverySessionId,
+        context: widget.diagnosisContext,
       );
-
       if (!mounted) return;
 
       setState(() {
-        _answer = DiscoveryAnswerView.fromJson(
-          payload['answer'] as Map<String, dynamic>,
-        );
+        _answer = result;
         _session = _session.recordQuestion();
         _questionController.clear();
+        _state = result.diagnosis.trustScore.level == 'insufficient'
+            ? ChatDiagnosisState.insufficientInformation
+            : ChatDiagnosisState.success;
+        _errorMessage = result.diagnosis.trustScore.level == 'insufficient'
+            ? "Agrivito a besoin de plus d'informations."
+            : null;
       });
-    } on DiscoveryApiException catch (error) {
+    } on AIDiagnosisApiException catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.message;
+        _state = _stateForError(error.kind);
+        _errorMessage = error.message;
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
+  }
+
+  ChatDiagnosisState _stateForError(AIDiagnosisErrorKind kind) {
+    switch (kind) {
+      case AIDiagnosisErrorKind.validation:
+        return ChatDiagnosisState.validationError;
+      case AIDiagnosisErrorKind.network:
+        return ChatDiagnosisState.networkError;
+      case AIDiagnosisErrorKind.provider:
+        return ChatDiagnosisState.providerError;
+      case AIDiagnosisErrorKind.insufficientInformation:
+        return ChatDiagnosisState.insufficientInformation;
+      case AIDiagnosisErrorKind.discoveryLimit:
+        return ChatDiagnosisState.discoveryLimitReached;
+    }
+  }
+
+  void _showDiscoveryLimit() {
+    setState(() {
+      _state = ChatDiagnosisState.discoveryLimitReached;
+      _errorMessage = 'Vous avez atteint la limite du mode découverte.';
+    });
   }
 
   void _resetDiscoverySession() {
     setState(() {
       _session = DiscoverySession.create();
       _answer = null;
-      _error = null;
+      _errorMessage = null;
+      _state = ChatDiagnosisState.idle;
       _questionController.clear();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final remaining = _session.remaining;
-    final hasReachedLimit = !_session.hasRemainingQuestions;
+    final hasReachedLimit = !_session.hasRemainingQuestions ||
+        _state == ChatDiagnosisState.discoveryLimitReached;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(title: const Text('Chat Agrivito')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -105,17 +145,15 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 4),
             const Text('3 questions gratuites pour tester Agrivito.'),
-            const Text(
-              'Créez un compte pour sauvegarder votre historique plus tard.',
-            ),
             const SizedBox(height: 12),
             _UsageBanner(
-              remaining: remaining,
+              remaining: _session.remaining,
               limit: _session.questionsLimit,
               used: _session.questionsUsed,
             ),
             const SizedBox(height: 16),
             TextField(
+              key: const Key('diagnosis-question'),
               controller: _questionController,
               enabled: !hasReachedLimit && !_isLoading,
               minLines: 2,
@@ -128,57 +166,68 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
+              key: const Key('diagnosis-submit'),
               onPressed: _isLoading || hasReachedLimit ? null : _sendQuestion,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send_outlined),
-              label: Text(_isLoading ? 'Envoi...' : 'Poser la question'),
+              icon: const Icon(Icons.send_outlined),
+              label: const Text('Analyser la question'),
             ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _resetDiscoverySession,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réinitialiser la session découverte'),
-            ),
+            if (_isLoading) ...[
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 12),
+                  Text('Analyse en cours...'),
+                ],
+              ),
+            ],
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              _StatusMessage(
+                message: _errorMessage!,
+                isError: _state != ChatDiagnosisState.insufficientInformation,
+              ),
+            ],
             if (hasReachedLimit) ...[
               const SizedBox(height: 12),
-              const _LimitMessage(),
+              const _AccountInvitation(),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(LoginScreen.routeName),
-                      child: const Text('Login'),
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context)
+                          .pushNamed(LoginScreen.routeName),
+                      icon: const Icon(Icons.login),
+                      label: const Text('Login'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: FilledButton(
+                    child: FilledButton.icon(
                       onPressed: () => Navigator.of(context)
                           .pushNamed(RegisterScreen.routeName),
-                      child: const Text('Register'),
+                      icon: const Icon(Icons.person_add_outlined),
+                      label: const Text('Register'),
                     ),
                   ),
                 ],
               ),
             ],
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
             if (_answer != null) ...[
               const SizedBox(height: 20),
-              _DiscoveryAnswerCard(answer: _answer!),
+              _DiagnosisResultView(result: _answer!),
             ],
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _resetDiscoverySession,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Réinitialiser la session découverte'),
+            ),
           ],
         ),
       ),
@@ -222,33 +271,57 @@ class _UsageBanner extends StatelessWidget {
   }
 }
 
-class _LimitMessage extends StatelessWidget {
-  const _LimitMessage();
+class _StatusMessage extends StatelessWidget {
+  const _StatusMessage({required this.message, required this.isError});
+
+  final String message;
+  final bool isError;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
+        color: isError
+            ? colorScheme.errorContainer
+            : colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          'Vous avez atteint la limite du mode découverte. Créez un compte pour continuer plus tard.',
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(isError ? Icons.error_outline : Icons.info_outline),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _DiscoveryAnswerCard extends StatelessWidget {
-  const _DiscoveryAnswerCard({required this.answer});
-
-  final DiscoveryAnswerView answer;
+class _AccountInvitation extends StatelessWidget {
+  const _AccountInvitation();
 
   @override
   Widget build(BuildContext context) {
+    return const _StatusMessage(
+      message:
+          'Créez un compte pour continuer et sauvegarder votre historique.',
+      isError: false,
+    );
+  }
+}
+
+class _DiagnosisResultView extends StatelessWidget {
+  const _DiagnosisResultView({required this.result});
+
+  final AIDiagnosisResponseData result;
+
+  @override
+  Widget build(BuildContext context) {
+    final diagnosis = result.diagnosis;
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).dividerColor),
@@ -260,31 +333,89 @@ class _DiscoveryAnswerCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              answer.summary,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(answer.response),
-            const SizedBox(height: 16),
-            _TrustScoreView(trustScore: answer.trustScore),
-            const SizedBox(height: 16),
-            const Text(
-              'Questions complémentaires',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            ...answer.followUpQuestions.map(
-              (question) => _BulletText(text: question),
+              'Diagnostic Agrivito',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Précautions',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            _TextSection(title: 'Résumé', items: [diagnosis.summary]),
+            _TextSection(title: 'Observations', items: diagnosis.observations),
+            _HypothesesSection(items: diagnosis.hypotheses),
+            _TextSection(
+              title: 'Recommandations',
+              items: diagnosis.recommendations,
             ),
+            _TextSection(
+              title: 'Questions complémentaires',
+              items: diagnosis.followUpQuestions,
+            ),
+            _TextSection(title: 'Précautions', items: diagnosis.precautions),
+            _TrustScoreView(trustScore: diagnosis.trustScore),
             const SizedBox(height: 8),
-            ...answer.precautions.map((item) => _BulletText(text: item)),
+            Text(
+              'Mode de réponse : ${_responseModeLabel(diagnosis.responseMode)}',
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TextSection extends StatelessWidget {
+  const _TextSection({required this.title, required this.items});
+
+  final String title;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          ...items.map((item) => _BulletText(text: item)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HypothesesSection extends StatelessWidget {
+  const _HypothesesSection({required this.items});
+
+  final List<DiagnosisHypothesisData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Hypothèses',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.label,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(item.explanation),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -293,15 +424,24 @@ class _DiscoveryAnswerCard extends StatelessWidget {
 class _TrustScoreView extends StatelessWidget {
   const _TrustScoreView({required this.trustScore});
 
-  final TrustScoreViewData trustScore;
+  final DiagnosisTrustScoreData trustScore;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.speed_outlined),
-      title: Text('${trustScore.score} / 100 - ${trustScore.level}'),
-      subtitle: Text(trustScore.explanation),
+    return Semantics(
+      label: 'Niveau de confiance ${_trustLevelLabel(trustScore.level)}',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.speed_outlined),
+        title: const Text(
+          'Niveau de confiance',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '${_trustLevelLabel(trustScore.level)} - ${trustScore.score} / 100\n'
+          '${trustScore.explanation}',
+        ),
+      ),
     );
   }
 }
@@ -326,51 +466,20 @@ class _BulletText extends StatelessWidget {
   }
 }
 
-class DiscoveryAnswerView {
-  const DiscoveryAnswerView({
-    required this.summary,
-    required this.response,
-    required this.trustScore,
-    required this.followUpQuestions,
-    required this.precautions,
-  });
-
-  factory DiscoveryAnswerView.fromJson(Map<String, dynamic> json) {
-    return DiscoveryAnswerView(
-      summary: json['summary'] as String,
-      response: json['response'] as String,
-      trustScore: TrustScoreViewData.fromJson(
-        json['trust_score'] as Map<String, dynamic>,
-      ),
-      followUpQuestions:
-          (json['follow_up_questions'] as List<dynamic>).cast<String>(),
-      precautions: (json['precautions'] as List<dynamic>).cast<String>(),
-    );
-  }
-
-  final String summary;
-  final String response;
-  final TrustScoreViewData trustScore;
-  final List<String> followUpQuestions;
-  final List<String> precautions;
+String _trustLevelLabel(String level) {
+  return switch (level) {
+    'high' => 'Confiance élevée',
+    'medium' => 'Confiance moyenne',
+    'low' => 'Confiance faible',
+    _ => 'Informations insuffisantes',
+  };
 }
 
-class TrustScoreViewData {
-  const TrustScoreViewData({
-    required this.score,
-    required this.level,
-    required this.explanation,
-  });
-
-  factory TrustScoreViewData.fromJson(Map<String, dynamic> json) {
-    return TrustScoreViewData(
-      score: json['score'] as int,
-      level: json['level'] as String,
-      explanation: json['explanation'] as String,
-    );
-  }
-
-  final int score;
-  final String level;
-  final String explanation;
+String _responseModeLabel(String mode) {
+  return switch (mode) {
+    'reliable' => 'réponse fiable',
+    'hypotheses' => 'hypothèses',
+    'questions_required' => 'questions requises',
+    _ => 'refus de conclure',
+  };
 }
