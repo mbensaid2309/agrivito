@@ -2,16 +2,17 @@
 
 Application Flutter mobile-first du MVP Agrivito.
 
-## Objectif Sprint 5
+## Objectif Sprint 6
 
-Permettre de poser une question agricole et d'afficher le diagnostic texte
-structure retourne par FastAPI, tout en maintenant le contexte agricole
-persistant et le mode decouverte.
+Permettre de choisir une photo, utiliser la camera, previsualiser puis envoyer
+le fichier au backend FastAPI. Le Sprint 6 stocke le media et ses metadonnees,
+mais ne produit aucun diagnostic visuel.
 
 ## Stack
 
 - Flutter et Dart
 - package `http` pour appeler uniquement le backend Agrivito
+- package officiel `image_picker` pour la galerie et la camera
 
 ## Installation
 
@@ -44,6 +45,27 @@ flutter test
 Les services HTTP sont injectables. Les tests utilisent des implementations
 factices et n'appellent ni le backend ni OpenAI.
 
+## Upload photo
+
+L'ecran `Envoyer une photo` permet :
+
+- selection galerie ;
+- capture camera ;
+- previsualisation ;
+- remplacement et annulation ;
+- upload multipart vers `POST /media/upload` ;
+- envoi du contexte exploitation/parcelle/culture disponible ;
+- confirmation et erreurs lisibles.
+
+Les etats geres couvrent repos, selection, previsualisation, envoi, succes,
+validation, permission, reseau, backend et limite decouverte. Les messages de
+permission distinguent camera et galerie. `image_picker` s'appuie sur les
+permissions natives de chaque plateforme ; les futurs runners iOS/Android
+devront conserver leurs descriptions d'usage camera/photos.
+
+La limite du mode decouverte est d'une photo par session. Le service utilise
+uniquement `AGRIVITO_API_BASE_URL` et ne contient aucune configuration AWS.
+
 ## Diagnostic texte
 
 Le Chat appelle uniquement :
@@ -74,6 +96,7 @@ ni cle OpenAI, ni reponse brute du fournisseur.
 
 - Home
 - Chat avec diagnostic texte et mode decouverte
+- Upload photo avec galerie, camera et previsualisation
 - Diagnostic Result
 - Login et Register prepares pour Cognito / Amplify
 - History et Profile
@@ -115,4 +138,6 @@ est `http://127.0.0.1:8000`.
 - Le choix mock ou live est entierement decide par le backend.
 - L'identifiant utilisateur reste mocke avant Cognito.
 - Aucun diagnostic photo, voix ou RAG n'est inclus.
+- La photo est enregistree, mais aucune analyse OpenAI Vision n'est effectuee.
+- L'autorisation d'acces aux medias restera renforcee avec Cognito reel.
 - Aucun acces direct a OpenAI ou Supabase n'est present dans le mobile.

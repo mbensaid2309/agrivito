@@ -13,6 +13,7 @@ import 'farms_screen.dart';
 import 'field_crop_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
+import 'photo_upload_screen.dart';
 import 'register_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -151,6 +152,11 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.chat_outlined,
               label: 'Chat',
               routeName: ChatScreen.routeName,
+            ),
+            const _NavigationButton(
+              icon: Icons.add_a_photo_outlined,
+              label: 'Envoyer une photo',
+              routeName: PhotoUploadScreen.routeName,
             ),
             const _NavigationButton(
               icon: Icons.fact_check_outlined,

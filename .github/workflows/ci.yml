@@ -26,6 +26,9 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/agrivito_test
       AI_MODE: mock
+      MEDIA_STORAGE_PROVIDER: local
+      MEDIA_LOCAL_PATH: /tmp/agrivito-media
+      MEDIA_MAX_SIZE_MB: 10
     defaults:
       run:
         working-directory: services/backend
@@ -42,7 +45,10 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run migrations
-        run: alembic upgrade head
+        run: |
+          alembic upgrade head
+          alembic downgrade -1
+          alembic upgrade head
 
       - name: Run tests
         run: pytest

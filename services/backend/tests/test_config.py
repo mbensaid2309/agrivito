@@ -18,6 +18,13 @@ def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.log_level == "INFO"
     assert settings.ai_mode == "mock"
     assert settings.openai_timeout_seconds == 30
+    assert settings.media_storage_provider == "local"
+    assert settings.media_max_size_mb == 10
+    assert settings.media_allowed_mime_types == (
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    )
 
 
 def test_database_url_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -63,4 +70,25 @@ def test_openai_timeout_must_be_positive_number(
     monkeypatch.setenv("OPENAI_TIMEOUT_SECONDS", value)
 
     with pytest.raises(ValueError, match="OPENAI_TIMEOUT_SECONDS"):
+        load_settings()
+
+
+def test_s3_mode_requires_region_and_bucket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MEDIA_STORAGE_PROVIDER", "s3")
+    monkeypatch.delenv("AWS_REGION", raising=False)
+    monkeypatch.delenv("AWS_S3_BUCKET", raising=False)
+
+    with pytest.raises(ValueError, match="AWS_REGION and AWS_S3_BUCKET"):
+        load_settings()
+
+
+@pytest.mark.parametrize("value", ["0", "invalid"])
+def test_media_size_must_be_positive_integer(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("MEDIA_MAX_SIZE_MB", value)
+
+    with pytest.raises(ValueError, match="MEDIA_MAX_SIZE_MB"):
         load_settings()
