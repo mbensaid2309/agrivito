@@ -68,3 +68,15 @@ class S3MediaStorage(MediaStorageProvider):
             raise MediaStorageOperationError(
                 "Media availability could not be checked."
             ) from error
+
+    def read(self, object_key: str) -> bytes:
+        try:
+            response = self._client.get_object(
+                Bucket=self._bucket,
+                Key=object_key,
+            )
+            return bytes(response["Body"].read())
+        except (BotoCoreError, ClientError, KeyError, AttributeError) as error:
+            raise MediaStorageOperationError(
+                "Media could not be read."
+            ) from error

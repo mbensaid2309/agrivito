@@ -45,6 +45,19 @@ OPENAI_MODEL=replace-with-approved-model
 Le mode live refuse le diagnostic si la cle ou le modele manque. Aucune valeur
 sensible ne doit etre loggee, affichee ou versionnee.
 
+Le diagnostic photo utilise une configuration separee :
+
+```env
+VISION_PROVIDER=openai
+VISION_MODE=mock
+OPENAI_VISION_MODEL=
+VISION_TIMEOUT_SECONDS=45
+PHOTO_DIAGNOSIS_DISCOVERY_LIMIT=1
+```
+
+`VISION_MODE=live` exige `OPENAI_API_KEY` et `OPENAI_VISION_MODEL`. Le modele
+n'est jamais duplique dans le code et le mode mock ne fait aucun appel reseau.
+
 Le stockage media local fonctionne sans AWS :
 
 ```env
@@ -73,6 +86,46 @@ curl http://127.0.0.1:8000/health
 
 La documentation interactive est disponible sur `http://127.0.0.1:8000/docs`.
 
+## Diagnostic photo Sprint 7
+
+```text
+POST /ai/photo-diagnosis
+```
+
+La requete contient `media_id`, une question optionnelle, la langue et le
+contexte agricole disponible. `PhotoDiagnosisOrchestrator` verifie le statut,
+le MIME, le proprietaire logique et le provider de stockage, puis lit les bytes
+avec `MediaStorageProvider`. Aucun chemin local ou objet S3 public n'est expose.
+
+`VisionProvider` possede deux implementations :
+
+- `MockVisionProvider`, deterministe et sans reseau pour le developpement/CI ;
+- `OpenAIVisionProvider`, qui utilise la Responses API et une sortie Pydantic
+  structuree en mode live.
+
+`PhotoQualityEngine` calcule un niveau `good`, `acceptable`, `poor` ou
+`unusable` a partir des signaux visuels bornes et des metadonnees. Le Trust
+Score visuel est ensuite calcule par Agrivito a partir de la qualite, de la
+visibilite, du contexte, de la question et de la validite de la sortie. Une
+photo inutilisable supprime hypotheses et recommandations et exige davantage
+d'informations. Une sortie provider invalide beneficie d'une seule tentative
+de correction, puis produit une erreur controlee.
+
+La migration `20260719_03` cree `diagnoses`, lie chaque diagnostic a `media`,
+stocke seulement le resultat structure, active RLS et retire les privileges des
+roles Data API Supabase. Aucun binaire ni reponse brute provider n'est persiste.
+
+Exemple :
+
+```bash
+curl -X POST http://127.0.0.1:8000/ai/photo-diagnosis \
+  -H "content-type: application/json" \
+  -d '{"media_id":"MEDIA_ID","question":"Pourquoi les feuilles sont-elles tachees ?","language":"fr","discovery_session_id":"temporary-photo-session"}'
+```
+
+Le mode decouverte autorise une analyse photo en memoire avant d'inviter a
+creer un compte.
+
 ## Medias Sprint 6
 
 ```text
@@ -99,7 +152,7 @@ service tente de supprimer le fichier. Aucun chemin systeme, credential ou URL
 publique n'est retourne.
 
 `LocalMediaStorage` cree le dossier configure, bloque toute traversee de chemin
-et fournit `save`, `exists`, `delete`. `S3MediaStorage` ecrit des objets prives
+et fournit `save`, `read`, `exists`, `delete`. `S3MediaStorage` ecrit des objets prives
 sans ACL publique et ses tests utilisent exclusivement un client mocke.
 
 En mode decouverte, une session peut envoyer une photo. Le compteur est en
@@ -188,12 +241,13 @@ et validation explicite.
 
 ```bash
 export AI_MODE=mock
+export VISION_MODE=mock
 pytest
 ```
 
 Les tests locaux utilisent SQLite en memoire. GitHub Actions utilise PostgreSQL
 16, un dossier media temporaire, applique `alembic upgrade head`, force
-`AI_MODE=mock` et `MEDIA_STORAGE_PROVIDER=local`, puis execute Pytest. Aucun
+`AI_MODE=mock`, `VISION_MODE=mock` et `MEDIA_STORAGE_PROVIDER=local`, puis execute Pytest. Aucun
 appel OpenAI ou AWS reel n'est effectue.
 
 La CI verifie aussi la reversibilite de la derniere migration avec
@@ -202,7 +256,8 @@ La CI verifie aussi la reversibilite de la derniere migration avec
 La couverture inclut le healthcheck, le diagnostic avec et sans contexte, le
 mode decouverte, les endpoints agricoles, le parser, les providers, les erreurs
 controlees, les seuils du Trust Score, les migrations, les formats images, les
-relations, les rollbacks et les providers local/S3.
+relations, les rollbacks, les providers local/S3, la qualite photo, le Trust
+Score visuel, la persistance et les erreurs Vision controlees.
 
 ## Docker
 
@@ -215,16 +270,17 @@ curl http://127.0.0.1:8000/health
 ## Configuration
 
 Les variables sont documentees dans `.env.example` : `DATABASE_URL`, les
-variables IA, `MEDIA_STORAGE_PROVIDER`, `MEDIA_LOCAL_PATH`,
+variables IA texte/Vision, `MEDIA_STORAGE_PROVIDER`, `MEDIA_LOCAL_PATH`,
 `MEDIA_MAX_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES` et la configuration AWS vide.
 Le fichier `.env` reel et `data/media/` restent ignores par Git.
 
 ## Limites connues
 
-- Pas de diagnostic photo, OpenAI Vision, voix, RAG ou historique complet.
-- Les appels OpenAI reels necessitent une configuration live explicite.
+- Le diagnostic photo est prudent et ne garantit jamais une maladie.
+- Les appels OpenAI reels texte ou Vision necessitent une configuration live explicite.
 - Cognito, AWS RDS et App Runner ne sont pas integres.
 - S3 est prepare mais non deploye ; le developpement et la CI utilisent le local.
 - Le compteur discovery est volontairement non persistant.
 - Supabase n'heberge que PostgreSQL pendant le MVP.
-- Aucun deploiement AWS n'est inclus dans le Sprint 6.
+- Pas de comparaison multi-images, video, voix, RAG ou historique avance.
+- Aucun deploiement AWS n'est inclus dans le Sprint 7.

@@ -44,6 +44,14 @@ class LocalMediaStorage(MediaStorageProvider):
     def exists(self, object_key: str) -> bool:
         return self._resolve_key(object_key).is_file()
 
+    def read(self, object_key: str) -> bytes:
+        try:
+            return self._resolve_key(object_key).read_bytes()
+        except OSError as error:
+            raise MediaStorageOperationError(
+                "Media could not be read."
+            ) from error
+
     def _resolve_key(self, object_key: str) -> Path:
         if not object_key or "\\" in object_key:
             raise MediaStorageOperationError("Invalid media storage key.")

@@ -2,11 +2,10 @@
 
 Application Flutter mobile-first du MVP Agrivito.
 
-## Objectif Sprint 6
+## Objectif Sprint 7
 
-Permettre de choisir une photo, utiliser la camera, previsualiser puis envoyer
-le fichier au backend FastAPI. Le Sprint 6 stocke le media et ses metadonnees,
-mais ne produit aucun diagnostic visuel.
+Permettre d'analyser une photo deja envoyee et d'afficher une reponse visuelle
+structuree, prudente et accompagnee d'une qualite photo et d'un Trust Score.
 
 ## Stack
 
@@ -66,6 +65,30 @@ devront conserver leurs descriptions d'usage camera/photos.
 La limite du mode decouverte est d'une photo par session. Le service utilise
 uniquement `AGRIVITO_API_BASE_URL` et ne contient aucune configuration AWS.
 
+Apres un upload reussi, `Analyser cette photo` ouvre le diagnostic avec la
+reference du media et la meme session. L'ecran `Analyser une photo` accepte
+aussi l'identifiant d'un media deja uploade.
+
+## Diagnostic photo
+
+Flutter appelle uniquement `POST /ai/photo-diagnosis`. Il envoie l'identifiant
+media, la question, la langue, la session et les identifiants agricoles utiles.
+L'ecran affiche :
+
+- qualite photo et problemes detectes ;
+- instructions de reprise ;
+- resume et observations visibles ;
+- hypotheses prudentes ;
+- recommandations ;
+- questions complementaires et precautions ;
+- Trust Score calcule par le backend ;
+- invitation a creer un compte apres l'analyse decouverte.
+
+Les etats couvrent repos, chargement, succes, photo pauvre, reprise necessaire,
+informations insuffisantes, erreurs reseau/provider, media introuvable et limite
+decouverte. Flutter ne lit jamais S3, n'appelle jamais OpenAI et ne calcule
+jamais la qualite ou le Trust Score.
+
 ## Diagnostic texte
 
 Le Chat appelle uniquement :
@@ -97,6 +120,7 @@ ni cle OpenAI, ni reponse brute du fournisseur.
 - Home
 - Chat avec diagnostic texte et mode decouverte
 - Upload photo avec galerie, camera et previsualisation
+- Diagnostic photo avec qualite, reprise et Trust Score
 - Diagnostic Result
 - Login et Register prepares pour Cognito / Amplify
 - History et Profile
@@ -137,7 +161,7 @@ est `http://127.0.0.1:8000`.
 - Pas d'historique persistant complet.
 - Le choix mock ou live est entierement decide par le backend.
 - L'identifiant utilisateur reste mocke avant Cognito.
-- Aucun diagnostic photo, voix ou RAG n'est inclus.
-- La photo est enregistree, mais aucune analyse OpenAI Vision n'est effectuee.
+- Le diagnostic photo ne garantit aucune maladie et traite une seule image.
+- La video, la voix, le RAG et l'historique avance ne sont pas inclus.
 - L'autorisation d'acces aux medias restera renforcee avec Cognito reel.
 - Aucun acces direct a OpenAI ou Supabase n'est present dans le mobile.

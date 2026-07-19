@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/media_models.dart';
 import '../services/media_api_service.dart';
 import '../services/media_picker_service.dart';
+import '../models/photo_diagnosis_models.dart';
+import '../services/photo_diagnosis_api_service.dart';
+import 'photo_diagnosis_screen.dart';
 
 class PhotoUploadScreen extends StatefulWidget {
   static const routeName = '/photo-upload';
@@ -11,12 +14,14 @@ class PhotoUploadScreen extends StatefulWidget {
     super.key,
     required this.mediaApi,
     required this.mediaPicker,
+    this.photoDiagnosisApi = const PhotoDiagnosisApiService(),
     this.context = const MediaUploadContext(),
     this.discoverySessionId,
   });
 
   final MediaApi mediaApi;
   final MediaPicker mediaPicker;
+  final PhotoDiagnosisApi photoDiagnosisApi;
   final MediaUploadContext context;
   final String? discoverySessionId;
 
@@ -144,8 +149,8 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'La photo sera enregistrée. L’analyse visuelle sera disponible '
-              'dans une prochaine version.',
+              'La photo sera enregistrée. Après l’envoi, vous pourrez lancer '
+              'une analyse visuelle prudente.',
             ),
             const SizedBox(height: 16),
             if (_selection == null)
@@ -166,6 +171,27 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
             if (_uploadedMedia != null) ...[
               const SizedBox(height: 8),
               Text('Référence média : ${_uploadedMedia!.id}'),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('photo-start-diagnosis'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => PhotoDiagnosisScreen(
+                      api: widget.photoDiagnosisApi,
+                      initialMedia: _uploadedMedia,
+                      discoverySessionId: _discoverySessionId,
+                      context: PhotoDiagnosisContext(
+                        userId: widget.context.userId,
+                        farmId: widget.context.farmId,
+                        fieldId: widget.context.fieldId,
+                        cropId: widget.context.cropId,
+                      ),
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.image_search_outlined),
+                label: const Text('Analyser cette photo'),
+              ),
             ],
             const SizedBox(height: 16),
             Row(

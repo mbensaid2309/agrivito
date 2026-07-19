@@ -11,6 +11,7 @@ from app.api.field_crops import router as field_crops_router
 from app.api.fields import router as fields_router
 from app.api.health import router as health_router
 from app.api.media import router as media_router
+from app.api.photo_diagnosis import router as photo_diagnosis_router
 from app.core.config import get_settings
 from app.db.database import DatabaseConfigurationError
 from app.services.agriculture.exceptions import (
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
     application.include_router(crops_router)
     application.include_router(field_crops_router)
     application.include_router(media_router)
+    application.include_router(photo_diagnosis_router)
 
     @application.exception_handler(ResourceNotFoundError)
     async def resource_not_found_handler(

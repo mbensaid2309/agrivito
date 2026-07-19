@@ -26,6 +26,9 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/agrivito_test
       AI_MODE: mock
+      VISION_PROVIDER: openai
+      VISION_MODE: mock
+      PHOTO_DIAGNOSIS_DISCOVERY_LIMIT: 1
       MEDIA_STORAGE_PROVIDER: local
       MEDIA_LOCAL_PATH: /tmp/agrivito-media
       MEDIA_MAX_SIZE_MB: 10

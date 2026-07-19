@@ -273,6 +273,7 @@ def test_local_storage_save_delete_exists_and_blocks_traversal(
     key = "media/2026/07/test.jpg"
     media_storage.save(BytesIO(JPEG), key, "image/jpeg")
     assert media_storage.exists(key)
+    assert media_storage.read(key) == JPEG
     media_storage.delete(key)
     assert not media_storage.exists(key)
 
@@ -294,6 +295,7 @@ def test_s3_storage_uses_private_object_operations_without_real_aws() -> None:
     }
     assert "ACL" not in client.put_kwargs
     assert storage.exists("media/2026/07/id.jpg")
+    assert storage.read("media/2026/07/id.jpg") == JPEG
     storage.delete("media/2026/07/id.jpg")
     assert client.deleted_key == "media/2026/07/id.jpg"
 
@@ -335,6 +337,9 @@ class FailingStorage(MediaStorageProvider):
     def exists(self, object_key: str) -> bool:
         return False
 
+    def read(self, object_key: str) -> bytes:
+        raise MediaStorageOperationError("disk path secret")
+
 
 class FakeS3Client:
     def __init__(self) -> None:
@@ -349,6 +354,9 @@ class FakeS3Client:
 
     def delete_object(self, **kwargs: object) -> None:
         self.deleted_key = str(kwargs["Key"])
+
+    def get_object(self, **kwargs: object) -> dict[str, BytesIO]:
+        return {"Body": BytesIO(JPEG)}
 
 
 class MissingS3Client(FakeS3Client):
