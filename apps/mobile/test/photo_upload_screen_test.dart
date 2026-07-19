@@ -32,7 +32,7 @@ void main() {
     expect(find.byType(PhotoUploadScreen), findsOneWidget);
     expect(find.text('Choisissez ou prenez une photo.'), findsOneWidget);
     expect(
-      find.textContaining('L’analyse visuelle sera disponible'),
+      find.textContaining('analyse visuelle prudente'),
       findsOneWidget,
     );
   });
@@ -181,7 +181,8 @@ void main() {
     expect(api.lastContext?.farmId, 'farm-1');
     expect(api.lastContext?.fieldId, 'field-1');
     expect(api.lastContext?.cropId, 'crop-1');
-    await tester.scrollUntilVisible(find.text('Contexte agricole associé'), 300);
+    await tester.scrollUntilVisible(
+        find.text('Contexte agricole associé'), 300);
     expect(find.text('Contexte agricole associé'), findsOneWidget);
   });
 }

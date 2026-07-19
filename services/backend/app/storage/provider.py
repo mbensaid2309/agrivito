@@ -18,3 +18,7 @@ class MediaStorageProvider(ABC):
     @abstractmethod
     def exists(self, object_key: str) -> bool:
         raise NotImplementedError
+
+    @abstractmethod
+    def read(self, object_key: str) -> bytes:
+        raise NotImplementedError

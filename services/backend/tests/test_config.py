@@ -5,6 +5,8 @@ from app.db.database import DatabaseConfigurationError, get_engine
 from app.services.ai.dependencies import build_ai_provider
 from app.services.ai.exceptions import AIConfigurationError
 from app.services.ai.mock_provider import MockAIProvider
+from app.services.photo_diagnosis.dependencies import build_vision_provider
+from app.services.photo_diagnosis.mock_provider import MockVisionProvider
 
 
 def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -25,6 +27,9 @@ def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
         "image/png",
         "image/webp",
     )
+    assert settings.vision_mode == "mock"
+    assert settings.vision_timeout_seconds == 45
+    assert settings.photo_diagnosis_discovery_limit == 1
 
 
 def test_database_url_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -63,6 +68,26 @@ def test_live_mode_requires_openai_configuration(
         build_ai_provider(load_settings())
 
 
+def test_vision_mock_mode_does_not_require_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VISION_MODE", "mock")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_VISION_MODEL", raising=False)
+    provider = build_vision_provider(load_settings())
+    assert isinstance(provider, MockVisionProvider)
+
+
+def test_vision_live_mode_requires_key_and_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VISION_MODE", "live")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_VISION_MODEL", raising=False)
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        load_settings()
+
+
 @pytest.mark.parametrize("value", ["0", "invalid"])
 def test_openai_timeout_must_be_positive_number(
     monkeypatch: pytest.MonkeyPatch, value: str
@@ -91,4 +116,22 @@ def test_media_size_must_be_positive_integer(
     monkeypatch.setenv("MEDIA_MAX_SIZE_MB", value)
 
     with pytest.raises(ValueError, match="MEDIA_MAX_SIZE_MB"):
+        load_settings()
+
+
+@pytest.mark.parametrize("value", ["0", "invalid"])
+def test_vision_timeout_must_be_positive_number(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("VISION_TIMEOUT_SECONDS", value)
+    with pytest.raises(ValueError, match="VISION_TIMEOUT_SECONDS"):
+        load_settings()
+
+
+@pytest.mark.parametrize("value", ["0", "invalid"])
+def test_photo_diagnosis_limit_must_be_positive_integer(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("PHOTO_DIAGNOSIS_DISCOVERY_LIMIT", value)
+    with pytest.raises(ValueError, match="PHOTO_DIAGNOSIS_DISCOVERY_LIMIT"):
         load_settings()

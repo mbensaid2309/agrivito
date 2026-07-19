@@ -4,6 +4,7 @@ import 'services/agriculture_api_service.dart';
 import 'services/ai_diagnosis_api_service.dart';
 import 'services/media_api_service.dart';
 import 'services/media_picker_service.dart';
+import 'services/photo_diagnosis_api_service.dart';
 import 'screens/agricultural_profile_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/crops_screen.dart';
@@ -15,6 +16,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/photo_upload_screen.dart';
+import 'screens/photo_diagnosis_screen.dart';
 import 'screens/register_screen.dart';
 
 void main() {
@@ -29,6 +31,7 @@ class AgrivitoApp extends StatelessWidget {
     this.diagnosisApi,
     this.mediaApi,
     this.mediaPicker,
+    this.photoDiagnosisApi,
   });
 
   final bool enableHealthCheck;
@@ -36,6 +39,7 @@ class AgrivitoApp extends StatelessWidget {
   final AIDiagnosisApi? diagnosisApi;
   final MediaApi? mediaApi;
   final MediaPicker? mediaPicker;
+  final PhotoDiagnosisApi? photoDiagnosisApi;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +72,11 @@ class AgrivitoApp extends StatelessWidget {
         PhotoUploadScreen.routeName: (_) => PhotoUploadScreen(
               mediaApi: mediaApi ?? const MediaApiService(),
               mediaPicker: mediaPicker ?? ImagePickerMediaPicker(),
+              photoDiagnosisApi:
+                  photoDiagnosisApi ?? const PhotoDiagnosisApiService(),
+            ),
+        PhotoDiagnosisScreen.routeName: (_) => PhotoDiagnosisScreen(
+              api: photoDiagnosisApi ?? const PhotoDiagnosisApiService(),
             ),
       },
     );

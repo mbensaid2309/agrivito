@@ -1,5 +1,15 @@
-class VisionService:
-    """Placeholder for future OpenAI Vision calls from the backend only."""
+"""Compatibility exports for the Sprint 7 Vision integration."""
 
-    def analyze_image(self) -> None:
-        raise NotImplementedError("Vision integration is out of scope for Sprint 1.")
+from app.services.photo_diagnosis.mock_provider import MockVisionProvider
+from app.services.photo_diagnosis.openai_provider import OpenAIVisionProvider
+from app.services.photo_diagnosis.provider import (
+    VisionProvider,
+    VisionProviderRequest,
+)
+
+__all__ = [
+    "MockVisionProvider",
+    "OpenAIVisionProvider",
+    "VisionProvider",
+    "VisionProviderRequest",
+]

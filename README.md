@@ -2,24 +2,26 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 6
+## Objectif Sprint 7
 
-Le Sprint 6 ajoute la fondation d'upload photo sans diagnostic visuel :
+Le Sprint 7 ajoute le premier diagnostic photo prudent Agrivito :
 
-- capture ou selection d'une photo dans Flutter ;
-- previsualisation, remplacement, annulation et upload multipart ;
-- validation reelle JPEG, PNG, WebP et limite de 10 MB ;
-- abstraction backend `MediaStorageProvider` ;
-- stockage local pour le developpement et la CI ;
-- provider S3 prive prepare sans appel AWS reel en CI ;
-- table PostgreSQL `media` pour les metadonnees uniquement ;
-- maintien des fonctionnalites des Sprints 1 a 5.
+- lecture privee d'une photo deja uploadee via `MediaStorageProvider` ;
+- `OpenAIVisionProvider` et `MockVisionProvider` isoles derriere FastAPI ;
+- qualite photo et Trust Score visuel calcules par Agrivito ;
+- observations, hypotheses, recommandations, questions et precautions ;
+- demande de reprise pour une image pauvre ou inutilisable ;
+- table PostgreSQL `diagnoses` sans image ni reponse brute fournisseur ;
+- affichage complet dans Flutter et limite decouverte d'une analyse ;
+- maintien des fonctionnalites des Sprints 1 a 6.
 
 Architecture :
 
 ```text
-Flutter -> FastAPI -> MediaStorageProvider -> local ou S3
-                   -> PostgreSQL (metadonnees)
+Flutter -> FastAPI -> PhotoDiagnosisOrchestrator
+                   -> MediaStorageProvider -> image privee
+                   -> VisionProvider -> mock ou OpenAI Vision
+                   -> qualite + Trust Score -> PostgreSQL
 ```
 
 Supabase fournit uniquement l'hebergement PostgreSQL du MVP. Le mobile ne
@@ -48,7 +50,8 @@ agrivito/
  ├── prompts/
  │    ├── PROMPT-CODEX-SPRINT-1.md
  │    ├── PROMPT-CODEX-SPRINT-5.md
- │    └── PROMPT-CODEX-SPRINT-6.md
+ │    ├── PROMPT-CODEX-SPRINT-6.md
+ │    └── PROMPT-CODEX-SPRINT-7.md
  ├── apps/
  │    └── mobile/
  ├── services/
@@ -72,6 +75,7 @@ cp .env.example .env
 # Renseigner DATABASE_URL uniquement dans .env
 # AI_MODE=mock fonctionne sans cle OpenAI
 # MEDIA_STORAGE_PROVIDER=local ne requiert aucun secret AWS
+# VISION_MODE=mock fonctionne sans cle OpenAI
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
@@ -108,6 +112,14 @@ curl -X POST http://127.0.0.1:8000/media/upload \
 
 Les metadonnees sont relues avec `GET /media/{media_id}`. Le contenu binaire
 n'est jamais stocke dans PostgreSQL et aucune URL publique n'est generee.
+
+Diagnostic photo structure :
+
+```bash
+curl -X POST http://127.0.0.1:8000/ai/photo-diagnosis \
+  -H "content-type: application/json" \
+  -d '{"media_id":"MEDIA_ID","question":"Pourquoi les feuilles sont-elles tachees ?","language":"fr","discovery_session_id":"temporary-photo-session"}'
+```
 
 Les endpoints agricoles sont documentes dans `services/backend/README.md` et
 disponibles dans la documentation interactive FastAPI sur `/docs`.
@@ -149,7 +161,7 @@ flutter test
 - Ne jamais stocker de secret dans Git.
 - Ne jamais appeler OpenAI depuis le mobile.
 - Garder les evolutions limitees au sprint valide.
-- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 6.
+- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 7.
 
 ## Limites connues
 
@@ -159,7 +171,11 @@ flutter test
 - Le stockage local est utilise par defaut ; S3 est prepare mais non deploye.
 - `AI_MODE=mock` est le mode local et CI sans appel externe ; `AI_MODE=live`
   exige une cle et un modele OpenAI uniquement dans l'environnement backend.
-- Aucun diagnostic photo, OpenAI Vision, voix, RAG ou historique complet n'est inclus.
+- `VISION_MODE=mock` est utilise localement et en CI ; le mode `live` exige une
+  cle et un modele Vision uniquement dans l'environnement backend.
+- Le diagnostic reste une assistance prudente, jamais une maladie garantie.
+- La comparaison multi-images, la video, la voix, le RAG et l'historique
+  avance ne sont pas inclus.
 - Supabase est utilise uniquement comme PostgreSQL manage temporaire ; la cible
   cloud reste AWS RDS PostgreSQL.
 - L'identite mobile reste mockee tant que Cognito n'est pas integre.

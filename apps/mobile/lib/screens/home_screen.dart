@@ -14,6 +14,7 @@ import 'field_crop_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'photo_upload_screen.dart';
+import 'photo_diagnosis_screen.dart';
 import 'register_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -157,6 +158,11 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.add_a_photo_outlined,
               label: 'Envoyer une photo',
               routeName: PhotoUploadScreen.routeName,
+            ),
+            const _NavigationButton(
+              icon: Icons.image_search_outlined,
+              label: 'Analyser une photo',
+              routeName: PhotoDiagnosisScreen.routeName,
             ),
             const _NavigationButton(
               icon: Icons.fact_check_outlined,
