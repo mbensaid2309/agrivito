@@ -19,7 +19,7 @@ AreaUnit = Literal["hectare", "square_meter", "acre", "unknown"]
 
 
 class AgricultureModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     @field_validator("*", mode="before")
     @classmethod
@@ -28,7 +28,6 @@ class AgricultureModel(BaseModel):
 
 
 class FarmerProfileCreate(AgricultureModel):
-    user_id: str = PydanticField(min_length=1)
     display_name: str = PydanticField(min_length=1)
     user_type: UserType = "unknown"
     country: str = PydanticField(min_length=1)
@@ -38,11 +37,11 @@ class FarmerProfileCreate(AgricultureModel):
 
 
 class FarmerProfile(FarmerProfileCreate):
+    user_id: str
     created_at: datetime
 
 
 class FarmCreate(AgricultureModel):
-    user_id: str = PydanticField(min_length=1)
     name: str = PydanticField(min_length=1)
     country: str = PydanticField(min_length=1)
     region: str = PydanticField(min_length=1)
@@ -53,6 +52,7 @@ class FarmCreate(AgricultureModel):
 
 class Farm(FarmCreate):
     farm_id: str
+    user_id: str
     created_at: datetime
 
 
@@ -84,6 +84,7 @@ class CropCreate(AgricultureModel):
 
 class Crop(CropCreate):
     crop_id: str
+    user_id: Optional[str] = None
     created_at: datetime
 
 

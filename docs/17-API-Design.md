@@ -317,3 +317,49 @@ L'objectif n'est pas de créer beaucoup d'endpoints, mais de permettre une expé
 ---
 
 **Statut :APPROVED**
+
+---
+
+# Extension Sprint 8 - Authentification et propriété
+
+## Authentification
+
+Les routes privées exigent `Authorization: Bearer <JWT>`. FastAPI valide la
+signature, l'expiration, l'issuer, l'audience et le subject. Le subject devient
+le `user_id` interne ; aucun propriétaire n'est accepté depuis le payload.
+
+## Routes publiques
+
+```text
+GET  /health
+POST /discovery/question
+POST /discovery/media/upload
+POST /discovery/photo-diagnosis
+```
+
+Ces routes n'accèdent jamais aux données privées. Les limites découverte
+existantes restent non persistantes.
+
+## Routes privées
+
+```text
+GET|POST /farmer/profile
+GET|POST /farms
+GET      /farms/{farm_id}
+GET|POST /farms/{farm_id}/fields
+GET      /fields/{field_id}
+GET|POST /crops
+GET      /crops/{crop_id}
+GET|POST /fields/{field_id}/crop
+POST     /media/upload
+GET      /media/{media_id}
+POST     /ai/diagnosis
+POST     /ai/photo-diagnosis
+```
+
+Les ressources sont filtrées par utilisateur. Une ressource absente ou détenue
+par un autre utilisateur retourne `404` sans révéler son existence. Un token
+absent, invalide ou expiré retourne `401`; un fournisseur indisponible retourne
+`503` sans détail sensible.
+
+**Statut de l'extension : APPROVED - Sprint 8**

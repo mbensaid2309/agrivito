@@ -73,7 +73,7 @@ class PhotoDiagnosisOrchestrator:
         image_bytes = self._read_media(media)
         contextual_request = request.model_copy(
             update={
-                "user_id": request.user_id or media.user_id,
+                "user_id": getattr(request, "user_id", None) or media.user_id,
                 "farm_id": request.farm_id or media.farm_id,
                 "field_id": request.field_id or media.field_id,
                 "crop_id": request.crop_id or media.crop_id,
@@ -145,7 +145,7 @@ class PhotoDiagnosisOrchestrator:
             raise MediaValidationError("Media must be an image.", 415)
         if media.storage_provider != self._storage.name:
             raise MediaStorageUnavailableError()
-        if media.user_id and request.user_id != media.user_id:
+        if media.user_id and getattr(request, "user_id", None) != media.user_id:
             raise ResourceNotFoundError("Media not found.")
         if (
             media.discovery_session_id
@@ -206,7 +206,7 @@ class PhotoDiagnosisOrchestrator:
     def _consume_usage(
         self, request: PhotoDiagnosisRequest
     ) -> tuple[PhotoDiagnosisUsage, str | None]:
-        if request.user_id and not request.discovery_session_id:
+        if getattr(request, "user_id", None) and not request.discovery_session_id:
             return PhotoDiagnosisUsage(mode="authenticated"), None
         snapshot = self._usage_tracker.consume(request.discovery_session_id)
         return (

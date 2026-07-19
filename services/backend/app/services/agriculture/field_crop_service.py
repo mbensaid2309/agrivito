@@ -16,11 +16,15 @@ from app.services.agriculture.exceptions import (
 
 class FieldCropService:
     def create(
-        self, db: Session, field_id: str, payload: FieldCropCreate
+        self, db: Session, owner_id: str, field_id: str, payload: FieldCropCreate
     ) -> FieldCrop:
-        if db.get(Field, field_id) is None:
+        if self._owned_field(db, owner_id, field_id) is None:
             raise ResourceNotFoundError("Field not found.")
-        if db.get(Crop, payload.crop_id) is None:
+        if db.scalar(
+            select(Crop).where(
+                Crop.crop_id == payload.crop_id, Crop.user_id == owner_id
+            )
+        ) is None:
             raise ResourceNotFoundError("Crop not found.")
         if payload.status == "active":
             active = db.scalar(
@@ -45,8 +49,10 @@ class FieldCropService:
         db.refresh(association)
         return association
 
-    def get_for_field(self, db: Session, field_id: str) -> FieldCrop | None:
-        if db.get(Field, field_id) is None:
+    def get_for_field(
+        self, db: Session, owner_id: str, field_id: str
+    ) -> FieldCrop | None:
+        if self._owned_field(db, owner_id, field_id) is None:
             raise ResourceNotFoundError("Field not found.")
         statement = (
             select(FieldCrop)
@@ -54,3 +60,13 @@ class FieldCropService:
             .order_by(FieldCrop.created_at.desc())
         )
         return db.scalar(statement)
+
+    @staticmethod
+    def _owned_field(db: Session, owner_id: str, field_id: str) -> Field | None:
+        from app.models.farm import Farm
+
+        return db.scalar(
+            select(Field)
+            .join(Farm, Field.farm_id == Farm.farm_id)
+            .where(Field.field_id == field_id, Farm.user_id == owner_id)
+        )

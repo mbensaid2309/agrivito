@@ -17,10 +17,10 @@ PhotoDiagnosisStatus = Literal["completed", "failed", "insufficient"]
 
 
 class PhotoDiagnosisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     media_id: str = Field(min_length=1, max_length=128)
     question: str = Field(default="", max_length=4000)
     language: DiagnosisLanguage = "fr"
-    user_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     farm_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     field_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     crop_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
@@ -31,7 +31,6 @@ class PhotoDiagnosisRequest(BaseModel):
     @field_validator(
         "media_id",
         "question",
-        "user_id",
         "farm_id",
         "field_id",
         "crop_id",
@@ -102,3 +101,7 @@ class PhotoDiagnosisResponse(BaseModel):
     diagnosis: PhotoDiagnosisContent
     context_used: DiagnosisContextUsed
     usage: PhotoDiagnosisUsage
+
+
+class InternalPhotoDiagnosisRequest(PhotoDiagnosisRequest):
+    user_id: Optional[str] = Field(default=None, min_length=1, max_length=128)

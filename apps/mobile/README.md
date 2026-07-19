@@ -2,16 +2,17 @@
 
 Application Flutter mobile-first du MVP Agrivito.
 
-## Objectif Sprint 7
+## Objectif Sprint 8
 
-Permettre d'analyser une photo deja envoyee et d'afficher une reponse visuelle
-structuree, prudente et accompagnee d'une qualite photo et d'un Trust Score.
+Authentifier reellement l'utilisateur avec Supabase Auth et transmettre sa
+session au backend, sans donner au mobile un acces direct aux tables metier.
 
 ## Stack
 
 - Flutter et Dart
 - package `http` pour appeler uniquement le backend Agrivito
 - package officiel `image_picker` pour la galerie et la camera
+- package officiel `supabase_flutter`, limite a l'authentification
 
 ## Installation
 
@@ -25,7 +26,10 @@ flutter pub get
 Avec le backend sur la machine :
 
 ```bash
-flutter run --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000
+flutter run \
+  --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=PUBLIC_ANON_KEY
 ```
 
 Avec un emulateur Android :
@@ -42,7 +46,19 @@ flutter test
 ```
 
 Les services HTTP sont injectables. Les tests utilisent des implementations
-factices et n'appellent ni le backend ni OpenAI.
+factices et n'appellent ni Supabase, ni le backend, ni OpenAI.
+
+## Authentification et session
+
+`AuthService` encapsule Supabase Auth : inscription, connexion, restauration de
+session, reinitialisation du mot de passe et deconnexion. `AuthBootstrap`
+initialise le SDK uniquement si les deux variables publiques sont presentes.
+Une configuration manquante produit un message lisible au lieu d'un crash.
+
+`AuthenticatedHttpClient` ajoute `Authorization: Bearer <token>` uniquement aux
+routes privees. Un token absent ou expire demande une nouvelle connexion. Les
+routes `/health` et `/discovery/*` restent publiques. Le token n'est jamais
+affiche ou journalise.
 
 ## Upload photo
 
@@ -52,7 +68,8 @@ L'ecran `Envoyer une photo` permet :
 - capture camera ;
 - previsualisation ;
 - remplacement et annulation ;
-- upload multipart vers `POST /media/upload` ;
+- upload multipart vers `POST /media/upload` avec session, ou vers
+  `POST /discovery/media/upload` en mode anonyme ;
 - envoi du contexte exploitation/parcelle/culture disponible ;
 - confirmation et erreurs lisibles.
 
@@ -71,8 +88,10 @@ aussi l'identifiant d'un media deja uploade.
 
 ## Diagnostic photo
 
-Flutter appelle uniquement `POST /ai/photo-diagnosis`. Il envoie l'identifiant
-media, la question, la langue, la session et les identifiants agricoles utiles.
+Flutter appelle `POST /ai/photo-diagnosis` avec JWT, ou
+`POST /discovery/photo-diagnosis` en mode anonyme. Il envoie l'identifiant
+media, la question, la langue et les identifiants agricoles utiles seulement
+pour une session authentifiee.
 L'ecran affiche :
 
 - qualite photo et problemes detectes ;
@@ -91,14 +110,15 @@ jamais la qualite ou le Trust Score.
 
 ## Diagnostic texte
 
-Le Chat appelle uniquement :
+Le Chat authentifie appelle :
 
 ```text
 POST /ai/diagnosis
 ```
 
-Le payload contient la question, la langue, la session decouverte et les
-identifiants agricoles lorsqu'ils sont disponibles. L'ecran affiche separement :
+Le mode anonyme utilise `POST /discovery/question`. Le payload prive contient la
+question, la langue et les identifiants agricoles lorsqu'ils sont disponibles.
+L'ecran affiche separement :
 
 - resume ;
 - observations ;
@@ -122,7 +142,7 @@ ni cle OpenAI, ni reponse brute du fournisseur.
 - Upload photo avec galerie, camera et previsualisation
 - Diagnostic photo avec qualite, reprise et Trust Score
 - Diagnostic Result
-- Login et Register prepares pour Cognito / Amplify
+- Login, Register, Forgot Password et Profile authentifie via Supabase Auth
 - History et Profile
 - Profil agricole
 - Exploitations, parcelles et cultures
@@ -138,15 +158,16 @@ succes, validation et erreurs reseau/backend.
 Flutter -> FastAPI -> PostgreSQL
 ```
 
-Flutter ne contient aucune connexion PostgreSQL, cle Supabase ou dependance
-`supabase_flutter`.
+Flutter ne contient aucune connexion PostgreSQL et n'utilise jamais le SDK
+Supabase Database. La cle anon/publishable est une configuration cliente
+publique ; aucune cle `service_role` ou secret JWT ne doit etre fourni au mobile.
 
 ## Mode decouverte
 
 - Une session locale non persistante est creee automatiquement.
 - L'utilisateur peut poser jusqu'a trois questions.
-- Le Chat utilise `POST /ai/diagnosis` avec l'identifiant de session.
-- L'ancien endpoint `POST /discovery/question` reste disponible cote backend.
+- Le Chat anonyme utilise `POST /discovery/question` ; le Chat authentifie
+  utilise `POST /ai/diagnosis` avec son JWT.
 - Apres la limite, l'application invite a creer un compte.
 - Le mobile n'appelle jamais OpenAI directement.
 
@@ -157,11 +178,9 @@ est `http://127.0.0.1:8000`.
 
 ## Limites connues
 
-- Pas d'authentification Cognito effective.
+- Pas de Cognito reel ni de migration automatique depuis Supabase Auth.
 - Pas d'historique persistant complet.
 - Le choix mock ou live est entierement decide par le backend.
-- L'identifiant utilisateur reste mocke avant Cognito.
 - Le diagnostic photo ne garantit aucune maladie et traite une seule image.
 - La video, la voix, le RAG et l'historique avance ne sont pas inclus.
-- L'autorisation d'acces aux medias restera renforcee avec Cognito reel.
-- Aucun acces direct a OpenAI ou Supabase n'est present dans le mobile.
+- Aucun acces direct a OpenAI, PostgreSQL ou aux tables Supabase n'est present.

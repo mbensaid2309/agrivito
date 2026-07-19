@@ -7,7 +7,9 @@ import 'login_screen.dart';
 class RegisterScreen extends StatefulWidget {
   static const routeName = '/register';
 
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, required this.authService});
+
+  final AuthService authService;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -19,7 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  final AuthService _authService = const AuthService();
   String? _message;
   bool _isLoading = false;
 
@@ -44,6 +45,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
       return;
     }
+    if (!email.contains('@')) {
+      setState(() => _message = 'Saisissez une adresse email valide.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(
+        () => _message = 'Le mot de passe doit contenir au moins 8 caractères.',
+      );
+      return;
+    }
 
     if (password != confirmPassword) {
       setState(() {
@@ -57,8 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _message = null;
     });
 
-    final result = await _authService.register(
-      name: name,
+    final result = await widget.authService.signUp(
       email: email,
       password: password,
     );
@@ -84,9 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'La création réelle du compte Cognito via Amplify sera connectée plus tard.',
-            ),
+            const Text('Créez un compte sécurisé avec Supabase Auth.'),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,

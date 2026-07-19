@@ -14,24 +14,17 @@ enum PhotoDiagnosisState {
 }
 
 class PhotoDiagnosisContext {
-  const PhotoDiagnosisContext({
-    this.userId,
-    this.farmId,
-    this.fieldId,
-    this.cropId,
-  });
+  const PhotoDiagnosisContext({this.farmId, this.fieldId, this.cropId});
 
-  final String? userId;
   final String? farmId;
   final String? fieldId;
   final String? cropId;
 
   Map<String, dynamic> toJson() => {
-        if (_present(userId)) 'user_id': userId!.trim(),
-        if (_present(farmId)) 'farm_id': farmId!.trim(),
-        if (_present(fieldId)) 'field_id': fieldId!.trim(),
-        if (_present(cropId)) 'crop_id': cropId!.trim(),
-      };
+    if (_present(farmId)) 'farm_id': farmId!.trim(),
+    if (_present(fieldId)) 'field_id': fieldId!.trim(),
+    if (_present(cropId)) 'crop_id': cropId!.trim(),
+  };
 
   static bool _present(String? value) =>
       value != null && value.trim().isNotEmpty;

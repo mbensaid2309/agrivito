@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
+from uuid import uuid4
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.models.diagnosis import Diagnosis
+from app.services.media.exceptions import MediaPersistenceError
 
 from app.schemas.ai_diagnosis import (
     AIDiagnosisRequest,
@@ -90,6 +95,7 @@ class AIOrchestrator:
             parsed=parsed,
             trust_score=trust_score,
         )
+        self._persist_authenticated_diagnosis(db, request, diagnosis)
         duration_ms = round((time.monotonic() - started_at) * 1000)
         logger.info(
             "ai_diagnosis provider=%s duration_ms=%s success=true "
@@ -106,7 +112,7 @@ class AIOrchestrator:
         )
 
     def _build_usage(self, request: AIDiagnosisRequest) -> DiagnosisUsage:
-        if request.user_id and not request.discovery_session_id:
+        if getattr(request, "user_id", None) and not request.discovery_session_id:
             return DiagnosisUsage(mode="authenticated")
         snapshot = self._usage_tracker.consume(request.discovery_session_id)
         return DiagnosisUsage(
@@ -186,3 +192,48 @@ class AIOrchestrator:
             response_mode=response_mode,
             language=request.language,
         )
+
+    def _persist_authenticated_diagnosis(
+        self,
+        db: Session,
+        request: AIDiagnosisRequest,
+        diagnosis: DiagnosisContent,
+    ) -> None:
+        owner_id = getattr(request, "user_id", None)
+        if not owner_id:
+            return
+        record = Diagnosis(
+            id=str(uuid4()),
+            media_id=None,
+            user_id=owner_id,
+            discovery_session_id=None,
+            farm_id=request.farm_id,
+            field_id=request.field_id,
+            crop_id=request.crop_id,
+            diagnosis_type="text",
+            summary=diagnosis.summary,
+            observations_json=diagnosis.observations,
+            hypotheses_json=[item.model_dump() for item in diagnosis.hypotheses],
+            recommendations_json=diagnosis.recommendations,
+            follow_up_questions_json=diagnosis.follow_up_questions,
+            precautions_json=diagnosis.precautions,
+            photo_quality_score=None,
+            photo_quality_level=None,
+            trust_score=diagnosis.trust_score.score,
+            trust_level=diagnosis.trust_score.level,
+            response_mode=diagnosis.response_mode,
+            language=diagnosis.language,
+            provider=self._provider.name,
+            model=getattr(self._provider, "model", None),
+            status=(
+                "insufficient"
+                if diagnosis.trust_score.level == "insufficient"
+                else "completed"
+            ),
+        )
+        try:
+            db.add(record)
+            db.commit()
+        except SQLAlchemyError as error:
+            db.rollback()
+            raise MediaPersistenceError() from error

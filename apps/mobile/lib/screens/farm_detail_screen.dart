@@ -53,9 +53,9 @@ class _FarmDetailScreenState extends State<FarmDetailScreen> {
       final field = await widget.api.createField(widget.farm.id, draft);
       if (!mounted) return;
       setState(() => _fields = [..._fields, field]);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Parcelle enregistrée.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Parcelle enregistrée.')));
     } on AgricultureApiException catch (error) {
       if (!mounted) return;
       setState(() => _error = error.message);
@@ -169,7 +169,9 @@ class _CreateFieldDialogState extends State<_CreateFieldDialog> {
               ),
               TextFormField(
                 controller: _area,
-                decoration: const InputDecoration(labelText: 'Surface (hectares)'),
+                decoration: const InputDecoration(
+                  labelText: 'Surface (hectares)',
+                ),
                 keyboardType: TextInputType.number,
                 validator: (value) => double.tryParse(value ?? '') == null
                     ? 'Surface invalide'
@@ -185,8 +187,14 @@ class _CreateFieldDialogState extends State<_CreateFieldDialog> {
                 items: const [
                   DropdownMenuItem(value: 'yes', child: Text('Oui')),
                   DropdownMenuItem(value: 'no', child: Text('Non')),
-                  DropdownMenuItem(value: 'seasonal', child: Text('Saisonnier')),
-                  DropdownMenuItem(value: 'unknown', child: Text('Non précisé')),
+                  DropdownMenuItem(
+                    value: 'seasonal',
+                    child: Text('Saisonnier'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'unknown',
+                    child: Text('Non précisé'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _waterAccess = value!),
               ),
@@ -195,11 +203,20 @@ class _CreateFieldDialogState extends State<_CreateFieldDialog> {
                 decoration: const InputDecoration(labelText: 'Irrigation'),
                 items: const [
                   DropdownMenuItem(value: 'none', child: Text('Aucune')),
-                  DropdownMenuItem(value: 'drip', child: Text('Goutte-à-goutte')),
-                  DropdownMenuItem(value: 'sprinkler', child: Text('Aspersion')),
+                  DropdownMenuItem(
+                    value: 'drip',
+                    child: Text('Goutte-à-goutte'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'sprinkler',
+                    child: Text('Aspersion'),
+                  ),
                   DropdownMenuItem(value: 'flood', child: Text('Submersion')),
                   DropdownMenuItem(value: 'manual', child: Text('Manuelle')),
-                  DropdownMenuItem(value: 'unknown', child: Text('Non précisée')),
+                  DropdownMenuItem(
+                    value: 'unknown',
+                    child: Text('Non précisée'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _irrigation = value!),
               ),

@@ -78,7 +78,6 @@ class _AgriculturalProfileScreenState extends State<AgriculturalProfileScreen> {
     try {
       final saved = await widget.api.createFarmerProfile(
         FarmerProfileData(
-          userId: 'mobile-user',
           displayName: _nameController.text.trim(),
           userType: _userType,
           country: _countryController.text.trim(),
@@ -114,18 +113,34 @@ class _AgriculturalProfileScreenState extends State<AgriculturalProfileScreen> {
                     _ErrorBanner(message: _error!, onRetry: _loadProfile),
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Nom ou pseudo'),
+                    decoration: const InputDecoration(
+                      labelText: 'Nom ou pseudo',
+                    ),
                     validator: _required,
                     enabled: _profile == null,
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: _userType,
-                    decoration: const InputDecoration(labelText: "Type d'utilisateur"),
+                    decoration: const InputDecoration(
+                      labelText: "Type d'utilisateur",
+                    ),
                     items: const [
-                      DropdownMenuItem(value: 'farmer', child: Text('Agriculteur')),
-                      DropdownMenuItem(value: 'advisor', child: Text('Conseiller')),
-                      DropdownMenuItem(value: 'cooperative_member', child: Text('Membre de coopérative')),
-                      DropdownMenuItem(value: 'unknown', child: Text('Non précisé')),
+                      DropdownMenuItem(
+                        value: 'farmer',
+                        child: Text('Agriculteur'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'advisor',
+                        child: Text('Conseiller'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'cooperative_member',
+                        child: Text('Membre de coopérative'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'unknown',
+                        child: Text('Non précisé'),
+                      ),
                     ],
                     onChanged: _profile == null
                         ? (value) => setState(() => _userType = value!)
@@ -145,7 +160,9 @@ class _AgriculturalProfileScreenState extends State<AgriculturalProfileScreen> {
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: _language,
-                    decoration: const InputDecoration(labelText: 'Langue préférée'),
+                    decoration: const InputDecoration(
+                      labelText: 'Langue préférée',
+                    ),
                     items: const [
                       DropdownMenuItem(value: 'fr', child: Text('Français')),
                       DropdownMenuItem(value: 'darija', child: Text('Darija')),
@@ -161,7 +178,9 @@ class _AgriculturalProfileScreenState extends State<AgriculturalProfileScreen> {
                     FilledButton.icon(
                       onPressed: _isSaving ? null : _save,
                       icon: const Icon(Icons.save_outlined),
-                      label: Text(_isSaving ? 'Enregistrement...' : 'Enregistrer'),
+                      label: Text(
+                        _isSaving ? 'Enregistrement...' : 'Enregistrer',
+                      ),
                     )
                   else
                     const Text('Profil synchronisé avec Agrivito.'),
@@ -183,7 +202,10 @@ class _ErrorBanner extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        Text(
+          message,
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
         TextButton.icon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh),

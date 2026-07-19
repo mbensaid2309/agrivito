@@ -1,11 +1,13 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.trust_score import TrustScoreResponse
 
 
 class DiscoveryQuestionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     session_id: str = Field(min_length=1)
     question: str = Field(min_length=1)
     language: Literal["fr", "ar", "darija", "en"] = "fr"

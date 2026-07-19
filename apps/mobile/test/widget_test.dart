@@ -43,20 +43,22 @@ void main() {
 
     expect(find.byType(ChatScreen), findsOneWidget);
     expect(find.text('Mode découverte'), findsOneWidget);
-    expect(find.text('3 questions gratuites pour tester Agrivito.'),
-        findsOneWidget);
+    expect(
+      find.text('3 questions gratuites pour tester Agrivito.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('3 question(s) restante(s)'), findsOneWidget);
   });
 
-  testWidgets('Chat sends context and displays structured diagnosis',
-      (tester) async {
+  testWidgets('Chat sends context and displays structured diagnosis', (
+    tester,
+  ) async {
     final diagnosisApi = FakeDiagnosisApi();
     await tester.pumpWidget(
       MaterialApp(
         home: ChatScreen(
           diagnosisApi: diagnosisApi,
           diagnosisContext: const AIDiagnosisContext(
-            userId: 'user-1',
             farmId: 'farm-1',
             fieldId: 'field-1',
             cropId: 'crop-1',
@@ -145,9 +147,7 @@ void main() {
   testWidgets('Chat explains insufficient information', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: ChatScreen(
-          diagnosisApi: FakeDiagnosisApi(insufficient: true),
-        ),
+        home: ChatScreen(diagnosisApi: FakeDiagnosisApi(insufficient: true)),
       ),
     );
     await tester.enterText(
@@ -178,8 +178,9 @@ void main() {
     );
   });
 
-  testWidgets('Chat reaches discovery limit after three questions',
-      (tester) async {
+  testWidgets('Chat reaches discovery limit after three questions', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(home: ChatScreen(diagnosisApi: FakeDiagnosisApi())),
     );
@@ -200,13 +201,15 @@ void main() {
     expect(submitButton.onPressed, isNull);
     expect(
       find.text(
-          'Créez un compte pour continuer et sauvegarder votre historique.'),
+        'Créez un compte pour continuer et sauvegarder votre historique.',
+      ),
       findsOneWidget,
     );
   });
 
-  testWidgets('Login screen prepares auth and discovery access',
-      (tester) async {
+  testWidgets('Login screen prepares auth and discovery access', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       AgrivitoApp(
         enableHealthCheck: false,
@@ -334,20 +337,19 @@ class FakeAgricultureApi implements AgricultureApi {
 
   @override
   Future<FarmData> createFarm(FarmData farm) async => FarmData(
-        id: 'farm-created',
-        userId: farm.userId,
-        name: farm.name,
-        country: farm.country,
-        region: farm.region,
-        locality: farm.locality,
-        totalArea: farm.totalArea,
-      );
+    id: 'farm-created',
+    userId: farm.userId,
+    name: farm.name,
+    country: farm.country,
+    region: farm.region,
+    locality: farm.locality,
+    totalArea: farm.totalArea,
+  );
 
   @override
   Future<FarmerProfileData> createFarmerProfile(
     FarmerProfileData profile,
-  ) async =>
-      profile;
+  ) async => profile;
 
   @override
   Future<FieldData> createField(String farmId, FieldData field) async => field;
@@ -418,8 +420,7 @@ class LoadingDiagnosisApi implements AIDiagnosisApi {
     required String language,
     required String discoverySessionId,
     AIDiagnosisContext context = const AIDiagnosisContext(),
-  }) =>
-      _completer.future;
+  }) => _completer.future;
 }
 
 class ErrorDiagnosisApi implements AIDiagnosisApi {

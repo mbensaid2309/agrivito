@@ -31,14 +31,12 @@ void main() {
 
     expect(find.byType(PhotoUploadScreen), findsOneWidget);
     expect(find.text('Choisissez ou prenez une photo.'), findsOneWidget);
-    expect(
-      find.textContaining('analyse visuelle prudente'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('analyse visuelle prudente'), findsOneWidget);
   });
 
-  testWidgets('gallery selection shows preview and cancellation clears it',
-      (tester) async {
+  testWidgets('gallery selection shows preview and cancellation clears it', (
+    tester,
+  ) async {
     final picker = QueueMediaPicker([_selectedMedia('gallery.png')]);
     await tester.pumpWidget(_app(picker: picker));
 
@@ -77,10 +75,7 @@ void main() {
   testWidgets('upload displays progress then success', (tester) async {
     final api = LoadingMediaApi();
     await tester.pumpWidget(
-      _app(
-        picker: QueueMediaPicker([_selectedMedia('leaf.png')]),
-        api: api,
-      ),
+      _app(picker: QueueMediaPicker([_selectedMedia('leaf.png')]), api: api),
     );
     await tester.tap(find.byKey(const Key('photo-gallery')));
     await tester.pumpAndSettle();
@@ -97,9 +92,7 @@ void main() {
 
   testWidgets('permission errors are understandable', (tester) async {
     await tester.pumpWidget(
-      _app(
-        picker: ErrorMediaPicker(MediaPickerErrorKind.permissionDenied),
-      ),
+      _app(picker: ErrorMediaPicker(MediaPickerErrorKind.permissionDenied)),
     );
 
     await tester.tap(find.byKey(const Key('photo-camera')));
@@ -155,8 +148,9 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
-  testWidgets('agricultural context and discovery session are sent',
-      (tester) async {
+  testWidgets('agricultural context and discovery session are sent', (
+    tester,
+  ) async {
     final api = FakeMediaApi();
     await tester.pumpWidget(
       MaterialApp(
@@ -182,38 +176,40 @@ void main() {
     expect(api.lastContext?.fieldId, 'field-1');
     expect(api.lastContext?.cropId, 'crop-1');
     await tester.scrollUntilVisible(
-        find.text('Contexte agricole associé'), 300);
+      find.text('Contexte agricole associé'),
+      300,
+    );
     expect(find.text('Contexte agricole associé'), findsOneWidget);
   });
 }
 
 Widget _app({required MediaPicker picker, MediaApi? api}) => MaterialApp(
-      home: PhotoUploadScreen(
-        mediaApi: api ?? FakeMediaApi(),
-        mediaPicker: picker,
-        discoverySessionId: 'test-session',
-      ),
-    );
+  home: PhotoUploadScreen(
+    mediaApi: api ?? FakeMediaApi(),
+    mediaPicker: picker,
+    discoverySessionId: 'test-session',
+  ),
+);
 
 SelectedMedia _selectedMedia(String filename) => SelectedMedia(
-      bytes: Uint8List.fromList(
-        base64Decode(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-        ),
-      ),
-      filename: filename,
-      contentType: 'image/png',
-    );
+  bytes: Uint8List.fromList(
+    base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    ),
+  ),
+  filename: filename,
+  contentType: 'image/png',
+);
 
 MediaData _uploadedMedia() => MediaData(
-      id: 'media-1',
-      originalFilename: 'leaf.png',
-      contentType: 'image/png',
-      sizeBytes: 68,
-      storageProvider: 'local',
-      status: 'uploaded',
-      createdAt: DateTime.utc(2026, 7, 14),
-    );
+  id: 'media-1',
+  originalFilename: 'leaf.png',
+  contentType: 'image/png',
+  sizeBytes: 68,
+  storageProvider: 'local',
+  status: 'uploaded',
+  createdAt: DateTime.utc(2026, 7, 14),
+);
 
 class QueueMediaPicker implements MediaPicker {
   QueueMediaPicker(this.items);
@@ -263,8 +259,7 @@ class LoadingMediaApi extends FakeMediaApi {
   Future<MediaData> upload({
     required SelectedMedia media,
     MediaUploadContext context = const MediaUploadContext(),
-  }) =>
-      _completer.future;
+  }) => _completer.future;
 }
 
 class ErrorMediaApi extends FakeMediaApi {

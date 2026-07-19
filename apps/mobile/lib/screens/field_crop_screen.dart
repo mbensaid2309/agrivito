@@ -73,10 +73,12 @@ class _FieldCropScreenState extends State<FieldCropScreen> {
     try {
       final association = await widget.api.associateCrop(_fieldId!, _cropId!);
       if (!mounted) return;
-      setState(() => _associations = {
-            ..._associations,
-            association.fieldId: association,
-          });
+      setState(
+        () => _associations = {
+          ..._associations,
+          association.fieldId: association,
+        },
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Culture associée à la parcelle.')),
       );
@@ -124,7 +126,10 @@ class _FieldCropScreenState extends State<FieldCropScreen> {
                     decoration: const InputDecoration(labelText: 'Parcelle'),
                     items: [
                       for (final field in _fields)
-                        DropdownMenuItem(value: field.id, child: Text(field.name)),
+                        DropdownMenuItem(
+                          value: field.id,
+                          child: Text(field.name),
+                        ),
                     ],
                     onChanged: (value) => setState(() => _fieldId = value),
                   ),
@@ -133,7 +138,10 @@ class _FieldCropScreenState extends State<FieldCropScreen> {
                     decoration: const InputDecoration(labelText: 'Culture'),
                     items: [
                       for (final crop in _crops)
-                        DropdownMenuItem(value: crop.id, child: Text(crop.name)),
+                        DropdownMenuItem(
+                          value: crop.id,
+                          child: Text(crop.name),
+                        ),
                     ],
                     onChanged: (value) => setState(() => _cropId = value),
                   ),
@@ -160,7 +168,8 @@ class _FieldCropScreenState extends State<FieldCropScreen> {
                       leading: const Icon(Icons.link),
                       title: Text(field.name),
                       subtitle: Text(
-                        _cropById(association.cropId)?.name ?? 'Culture inconnue',
+                        _cropById(association.cropId)?.name ??
+                            'Culture inconnue',
                       ),
                     ),
               ],

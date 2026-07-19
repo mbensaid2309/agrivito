@@ -6,36 +6,60 @@ import 'package:http/testing.dart';
 
 import 'package:agrivito_mobile/models/ai_diagnosis_models.dart';
 import 'package:agrivito_mobile/services/ai_diagnosis_api_service.dart';
+import 'package:agrivito_mobile/services/auth_service.dart';
 
 void main() {
-  test('diagnosis service sends context and decodes structured response',
-      () async {
-    late Map<String, dynamic> sentPayload;
-    final client = MockClient((request) async {
-      sentPayload = jsonDecode(request.body) as Map<String, dynamic>;
-      expect(request.url.path, '/ai/diagnosis');
-      return http.Response(jsonEncode(_responseJson()), 200);
-    });
-    final service = AIDiagnosisApiService(client: client);
+  test(
+    'diagnosis service sends context and decodes structured response',
+    () async {
+      late Map<String, dynamic> sentPayload;
+      final client = MockClient((request) async {
+        sentPayload = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(request.url.path, '/ai/diagnosis');
+        return http.Response(jsonEncode(_responseJson()), 200);
+      });
+      final service = AIDiagnosisApiService(client: client);
 
-    final response = await service.diagnose(
-      question: 'Pourquoi les tomates jaunissent ?',
-      language: 'fr',
-      discoverySessionId: 'session-1',
-      context: const AIDiagnosisContext(
-        userId: 'user-1',
-        farmId: 'farm-1',
-        fieldId: 'field-1',
-        cropId: 'crop-1',
-      ),
+      final response = await service.diagnose(
+        question: 'Pourquoi les tomates jaunissent ?',
+        language: 'fr',
+        discoverySessionId: 'session-1',
+        context: const AIDiagnosisContext(
+          farmId: 'farm-1',
+          fieldId: 'field-1',
+          cropId: 'crop-1',
+        ),
+      );
+
+      expect(sentPayload.containsKey('user_id'), isFalse);
+      expect(sentPayload['farm_id'], 'farm-1');
+      expect(sentPayload['field_id'], 'field-1');
+      expect(sentPayload['crop_id'], 'crop-1');
+      expect(response.diagnosis.summary, 'Plusieurs causes sont possibles.');
+      expect(response.diagnosis.trustScore.score, 65);
+    },
+  );
+
+  test('anonymous diagnosis uses the isolated discovery route', () async {
+    late Map<String, dynamic> sentPayload;
+    final service = AIDiagnosisApiService(
+      authService: const UnavailableAuthService(),
+      client: MockClient((request) async {
+        expect(request.url.path, '/discovery/question');
+        sentPayload = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(jsonEncode(_discoveryResponseJson()), 200);
+      }),
     );
 
-    expect(sentPayload['user_id'], 'user-1');
-    expect(sentPayload['farm_id'], 'farm-1');
-    expect(sentPayload['field_id'], 'field-1');
-    expect(sentPayload['crop_id'], 'crop-1');
-    expect(response.diagnosis.summary, 'Plusieurs causes sont possibles.');
-    expect(response.diagnosis.trustScore.score, 65);
+    final response = await service.diagnose(
+      question: 'Pourquoi ?',
+      language: 'fr',
+      discoverySessionId: 'session-1',
+    );
+
+    expect(sentPayload['session_id'], 'session-1');
+    expect(sentPayload.containsKey('user_id'), isFalse);
+    expect(response.usage.mode, 'discovery');
   });
 
   test('diagnosis service maps provider errors', () async {
@@ -82,33 +106,48 @@ void main() {
 }
 
 Map<String, dynamic> _responseJson() => {
-      'diagnosis': {
-        'summary': 'Plusieurs causes sont possibles.',
-        'observations': ['Les feuilles jaunissent.'],
-        'hypotheses': [
-          {'label': "Excès d'eau", 'explanation': 'Le sol peut être humide.'},
-        ],
-        'recommendations': ["Vérifier l'humidité du sol."],
-        'follow_up_questions': ['Depuis combien de temps ?'],
-        'precautions': ['Ne pas traiter sans confirmation.'],
-        'trust_score': {
-          'score': 65,
-          'level': 'medium',
-          'explanation': 'Contexte incomplet.',
-        },
-        'response_mode': 'hypotheses',
-        'language': 'fr',
-      },
-      'context_used': {
-        'farmer_profile': true,
-        'farm': true,
-        'field': true,
-        'crop': true,
-      },
-      'usage': {
-        'mode': 'discovery',
-        'questions_used': 1,
-        'questions_limit': 3,
-        'remaining': 2,
-      },
-    };
+  'diagnosis': {
+    'summary': 'Plusieurs causes sont possibles.',
+    'observations': ['Les feuilles jaunissent.'],
+    'hypotheses': [
+      {'label': "Excès d'eau", 'explanation': 'Le sol peut être humide.'},
+    ],
+    'recommendations': ["Vérifier l'humidité du sol."],
+    'follow_up_questions': ['Depuis combien de temps ?'],
+    'precautions': ['Ne pas traiter sans confirmation.'],
+    'trust_score': {
+      'score': 65,
+      'level': 'medium',
+      'explanation': 'Contexte incomplet.',
+    },
+    'response_mode': 'hypotheses',
+    'language': 'fr',
+  },
+  'context_used': {
+    'farmer_profile': true,
+    'farm': true,
+    'field': true,
+    'crop': true,
+  },
+  'usage': {
+    'mode': 'discovery',
+    'questions_used': 1,
+    'questions_limit': 3,
+    'remaining': 2,
+  },
+};
+
+Map<String, dynamic> _discoveryResponseJson() => {
+  'answer': {
+    'summary': 'Résumé prudent.',
+    'response': 'Observez avant toute intervention.',
+    'follow_up_questions': ['Depuis quand ?'],
+    'precautions': ['Ne pas traiter sans confirmation.'],
+    'trust_score': {
+      'score': 65,
+      'level': 'moyen',
+      'explanation': 'Contexte incomplet.',
+    },
+  },
+  'usage': {'questions_used': 1, 'questions_limit': 3, 'remaining': 2},
+};

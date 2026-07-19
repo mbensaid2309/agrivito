@@ -108,9 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(
-                      _isChecking ? Icons.sync : Icons.cloud_done_outlined,
-                    ),
+                    Icon(_isChecking ? Icons.sync : Icons.cloud_done_outlined),
                     const SizedBox(width: 12),
                     Expanded(child: Text(_backendStatus)),
                     IconButton(

@@ -61,7 +61,7 @@ class MediaService:
         farm_id = self._clean_optional(farm_id)
         field_id = self._clean_optional(field_id)
         crop_id = self._clean_optional(crop_id)
-        self._validate_relations(db, farm_id, field_id, crop_id)
+        self._validate_relations(db, user_id, farm_id, field_id, crop_id)
         content_type = (file.content_type or "").lower()
         content = await self._read_and_validate(file, content_type)
         media_id = str(uuid4())
@@ -113,12 +113,15 @@ class MediaService:
                 self._usage_tracker.release(reserved_session)
             raise MediaPersistenceError() from error
 
-    def get(self, db: Session, media_id: str) -> Optional[Media]:
+    def get(self, db: Session, media_id: str, owner_id: str) -> Optional[Media]:
         try:
             UUID(media_id)
         except ValueError:
             return None
-        return db.get(Media, media_id)
+        media = db.get(Media, media_id)
+        if media is None or media.user_id != owner_id:
+            return None
+        return media
 
     async def _read_and_validate(
         self, file: UploadFile, content_type: str
@@ -149,17 +152,27 @@ class MediaService:
     def _validate_relations(
         self,
         db: Session,
+        owner_id: Optional[str],
         farm_id: Optional[str],
         field_id: Optional[str],
         crop_id: Optional[str],
     ) -> None:
+        if owner_id is None and any((farm_id, field_id, crop_id)):
+            raise ResourceNotFoundError("Agricultural context not found.")
         farm = db.get(Farm, farm_id) if farm_id else None
         if farm_id and farm is None:
+            raise ResourceNotFoundError("Farm not found.")
+        if farm is not None and farm.user_id != owner_id:
             raise ResourceNotFoundError("Farm not found.")
         field = db.get(Field, field_id) if field_id else None
         if field_id and field is None:
             raise ResourceNotFoundError("Field not found.")
-        if crop_id and db.get(Crop, crop_id) is None:
+        if field is not None:
+            parent_farm = db.get(Farm, field.farm_id)
+            if parent_farm is None or parent_farm.user_id != owner_id:
+                raise ResourceNotFoundError("Field not found.")
+        crop = db.get(Crop, crop_id) if crop_id else None
+        if crop_id and (crop is None or crop.user_id != owner_id):
             raise ResourceNotFoundError("Crop not found.")
         if farm_id and field is not None and field.farm_id != farm_id:
             raise ResourceConflictError("Field does not belong to the selected farm.")

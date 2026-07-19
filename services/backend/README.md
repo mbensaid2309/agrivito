@@ -26,6 +26,45 @@ Renseigner `DATABASE_URL` uniquement dans `.env`. Supabase est utilise uniquemen
 comme hebergement PostgreSQL manage pour le MVP. Le backend est le seul composant
 autorise a acceder a cette base.
 
+## Authentification Sprint 8
+
+FastAPI valide les JWT avant toute route privee. Le metier depend d'un
+`AuthenticatedUser` neutre obtenu via `AuthProvider` :
+
+- `MockAuthProvider` est deterministe en tests et CI, sans reseau ;
+- `SupabaseAuthProvider` verifie signature, expiration, issuer, audience et
+  claim `sub`, avec JWKS privilegie et secret HS256 en repli explicite.
+
+Configuration locale sans service externe :
+
+```env
+AUTH_PROVIDER=supabase
+AUTH_MODE=mock
+```
+
+Configuration live, uniquement dans l'environnement :
+
+```env
+AUTH_PROVIDER=supabase
+AUTH_MODE=live
+SUPABASE_URL=https://PROJECT.supabase.co
+SUPABASE_JWKS_URL=
+SUPABASE_JWT_SECRET=
+AUTH_AUDIENCE=authenticated
+AUTH_ISSUER=
+AUTH_TIMEOUT_SECONDS=10
+```
+
+`SUPABASE_URL` permet de deriver l'issuer et l'URL JWKS. Ne jamais versionner le
+secret JWT, une cle `service_role` ou un token utilisateur.
+
+Routes publiques : `GET /health`, `POST /discovery/question`,
+`POST /discovery/media/upload` et `POST /discovery/photo-diagnosis`.
+
+Les routes agricoles, media et diagnostic hors `/discovery` sont privees. Leur
+proprietaire vient exclusivement du claim `sub`. Un `user_id` client est refuse,
+et une ressource appartenant a un autre utilisateur produit un `404` sur.
+
 Le diagnostic fonctionne sans cle externe avec :
 
 ```env
@@ -86,7 +125,7 @@ curl http://127.0.0.1:8000/health
 
 La documentation interactive est disponible sur `http://127.0.0.1:8000/docs`.
 
-## Diagnostic photo Sprint 7
+## Diagnostic photo
 
 ```text
 POST /ai/photo-diagnosis
@@ -126,7 +165,7 @@ curl -X POST http://127.0.0.1:8000/ai/photo-diagnosis \
 Le mode decouverte autorise une analyse photo en memoire avant d'inviter a
 creer un compte.
 
-## Medias Sprint 6
+## Medias
 
 ```text
 POST /media/upload
@@ -134,7 +173,8 @@ GET  /media/{media_id}
 ```
 
 `POST /media/upload` accepte un formulaire multipart avec `file` obligatoire et
-`user_id`, `discovery_session_id`, `farm_id`, `field_id`, `crop_id` optionnels.
+`farm_id`, `field_id`, `crop_id` optionnels. Le proprietaire vient du JWT.
+L'upload anonyme utilise `/discovery/media/upload` et une session decouverte.
 Le backend verifie la signature reelle et le MIME pour JPEG, PNG et WebP, refuse
 les fichiers vides ou superieurs a 10 MB, neutralise le nom fourni et genere une
 cle `media/YYYY/MM/<uuid>.<extension>`.
@@ -158,7 +198,7 @@ sans ACL publique et ses tests utilisent exclusivement un client mocke.
 En mode decouverte, une session peut envoyer une photo. Le compteur est en
 memoire et invite ensuite a creer un compte.
 
-## Diagnostic texte Sprint 5
+## Diagnostic texte
 
 ```text
 POST /ai/diagnosis
@@ -203,7 +243,7 @@ POST /discovery/question
 Il utilise le meme orchestrateur tout en conservant son contrat. Le compteur
 backend est non persistant et refuse une quatrieme question pour une meme session.
 
-## API agricole Sprint 4
+## API agricole privee
 
 ```text
 GET  /farmer/profile
@@ -242,13 +282,15 @@ et validation explicite.
 ```bash
 export AI_MODE=mock
 export VISION_MODE=mock
+export AUTH_MODE=mock
 pytest
 ```
 
 Les tests locaux utilisent SQLite en memoire. GitHub Actions utilise PostgreSQL
 16, un dossier media temporaire, applique `alembic upgrade head`, force
-`AI_MODE=mock`, `VISION_MODE=mock` et `MEDIA_STORAGE_PROVIDER=local`, puis execute Pytest. Aucun
-appel OpenAI ou AWS reel n'est effectue.
+`AUTH_MODE=mock`, `AI_MODE=mock`, `VISION_MODE=mock` et
+`MEDIA_STORAGE_PROVIDER=local`, puis execute Pytest. Aucun appel Supabase,
+OpenAI ou AWS reel n'est effectue.
 
 La CI verifie aussi la reversibilite de la derniere migration avec
 `alembic downgrade -1`, puis reapplique `alembic upgrade head` avant les tests.
@@ -257,7 +299,8 @@ La couverture inclut le healthcheck, le diagnostic avec et sans contexte, le
 mode decouverte, les endpoints agricoles, le parser, les providers, les erreurs
 controlees, les seuils du Trust Score, les migrations, les formats images, les
 relations, les rollbacks, les providers local/S3, la qualite photo, le Trust
-Score visuel, la persistance et les erreurs Vision controlees.
+Score visuel, la persistance, les erreurs Vision controlees, les JWT valides et
+invalides, l'usurpation de `user_id` et l'isolation entre utilisateurs.
 
 ## Docker
 
@@ -271,16 +314,19 @@ curl http://127.0.0.1:8000/health
 
 Les variables sont documentees dans `.env.example` : `DATABASE_URL`, les
 variables IA texte/Vision, `MEDIA_STORAGE_PROVIDER`, `MEDIA_LOCAL_PATH`,
-`MEDIA_MAX_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES` et la configuration AWS vide.
+`MEDIA_MAX_SIZE_MB`, `MEDIA_ALLOWED_MIME_TYPES`, l'authentification et la
+configuration AWS vide.
 Le fichier `.env` reel et `data/media/` restent ignores par Git.
 
 ## Limites connues
 
 - Le diagnostic photo est prudent et ne garantit jamais une maladie.
 - Les appels OpenAI reels texte ou Vision necessitent une configuration live explicite.
-- Cognito, AWS RDS et App Runner ne sont pas integres.
+- Cognito, AWS RDS et App Runner ne sont pas integres. `AuthProvider` permet une
+  migration future vers Cognito sans coupler le metier.
 - S3 est prepare mais non deploye ; le developpement et la CI utilisent le local.
 - Le compteur discovery est volontairement non persistant.
-- Supabase n'heberge que PostgreSQL pendant le MVP.
+- Supabase fournit Auth et PostgreSQL manage pendant le MVP, sans acces Flutter
+  direct aux tables metier.
 - Pas de comparaison multi-images, video, voix, RAG ou historique avance.
-- Aucun deploiement AWS n'est inclus dans le Sprint 7.
+- Aucun deploiement AWS n'est inclus dans le Sprint 8.

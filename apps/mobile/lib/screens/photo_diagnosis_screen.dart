@@ -36,9 +36,11 @@ class _PhotoDiagnosisScreenState extends State<PhotoDiagnosisScreen> {
   @override
   void initState() {
     super.initState();
-    _mediaController =
-        TextEditingController(text: widget.initialMedia?.id ?? '');
-    _discoverySessionId = widget.discoverySessionId ??
+    _mediaController = TextEditingController(
+      text: widget.initialMedia?.id ?? '',
+    );
+    _discoverySessionId =
+        widget.discoverySessionId ??
         'photo-diagnosis-${DateTime.now().microsecondsSinceEpoch}';
   }
 
@@ -155,8 +157,8 @@ class _PhotoDiagnosisScreenState extends State<PhotoDiagnosisScreen> {
               key: const Key('photo-diagnosis-submit'),
               onPressed:
                   loading || _state == PhotoDiagnosisState.discoveryLimitReached
-                      ? null
-                      : _diagnose,
+                  ? null
+                  : _diagnose,
               icon: loading
                   ? const SizedBox.square(
                       dimension: 18,
@@ -179,7 +181,8 @@ class _PhotoDiagnosisScreenState extends State<PhotoDiagnosisScreen> {
             if (_state == PhotoDiagnosisState.discoveryLimitReached) ...[
               const SizedBox(height: 8),
               const Text(
-                  'Créez un compte pour continuer et sauvegarder vos diagnostics.'),
+                'Créez un compte pour continuer et sauvegarder vos diagnostics.',
+              ),
             ],
             if (_result != null) ...[
               const SizedBox(height: 20),
@@ -244,11 +247,11 @@ class _PhotoDiagnosisScreenState extends State<PhotoDiagnosisScreen> {
   }
 
   static bool _isError(PhotoDiagnosisState state) => {
-        PhotoDiagnosisState.networkError,
-        PhotoDiagnosisState.providerError,
-        PhotoDiagnosisState.mediaNotFound,
-        PhotoDiagnosisState.discoveryLimitReached,
-      }.contains(state);
+    PhotoDiagnosisState.networkError,
+    PhotoDiagnosisState.providerError,
+    PhotoDiagnosisState.mediaNotFound,
+    PhotoDiagnosisState.discoveryLimitReached,
+  }.contains(state);
 }
 
 class _QualityCard extends StatelessWidget {
@@ -265,8 +268,10 @@ class _QualityCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Qualité photo',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Qualité photo',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             Text('${quality.score}% — ${quality.level}'),
             for (final issue in quality.issues) Text('• $issue'),
             if (quality.retakeRequired) ...[

@@ -19,6 +19,7 @@ class Crop(Base):
     crop_id: Mapped[str] = mapped_column(
         "id", String(36), primary_key=True, default=lambda: str(uuid4())
     )
+    user_id: Mapped[Optional[str]] = mapped_column(String(128), index=True)
     name: Mapped[str] = mapped_column(String(160), index=True)
     category: Mapped[str] = mapped_column(String(32))
     variety: Mapped[Optional[str]] = mapped_column(String(160))

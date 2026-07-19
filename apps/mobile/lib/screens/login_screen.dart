@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'chat_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
+import 'profile_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = '/login';
 
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, required this.authService});
+
+  final AuthService authService;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -16,7 +20,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = const AuthService();
   String? _message;
   bool _isLoading = false;
 
@@ -37,13 +40,26 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       return;
     }
+    if (!email.contains('@')) {
+      setState(() => _message = 'Saisissez une adresse email valide.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(
+        () => _message = 'Le mot de passe doit contenir au moins 8 caractères.',
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
       _message = null;
     });
 
-    final result = await _authService.login(email: email, password: password);
+    final result = await widget.authService.signIn(
+      email: email,
+      password: password,
+    );
 
     if (!mounted) return;
 
@@ -51,6 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _message = result.message;
       _isLoading = false;
     });
+    if (result.status == AuthStatus.authenticated && mounted) {
+      Navigator.of(context).pushReplacementNamed(ProfileScreen.routeName);
+    }
   }
 
   @override
@@ -66,9 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Auth Cognito via Amplify est préparée et sera connectée plus tard.',
-            ),
+            const Text('Connectez-vous avec votre compte Supabase Auth.'),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
@@ -93,6 +110,12 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(_isLoading ? 'Connexion...' : 'Connexion'),
             ),
             const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).pushNamed(ForgotPasswordScreen.routeName),
+              child: const Text('Mot de passe oublié ?'),
+            ),
             TextButton(
               onPressed: () =>
                   Navigator.of(context).pushNamed(RegisterScreen.routeName),
