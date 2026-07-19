@@ -130,7 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasReachedLimit = !_session.hasRemainingQuestions ||
+    final hasReachedLimit =
+        !_session.hasRemainingQuestions ||
         _state == ChatDiagnosisState.discoveryLimitReached;
 
     return Scaffold(
@@ -200,8 +201,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context)
-                          .pushNamed(LoginScreen.routeName),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(LoginScreen.routeName),
                       icon: const Icon(Icons.login),
                       label: const Text('Login'),
                     ),
@@ -209,8 +211,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => Navigator.of(context)
-                          .pushNamed(RegisterScreen.routeName),
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pushNamed(RegisterScreen.routeName),
                       icon: const Icon(Icons.person_add_outlined),
                       label: const Text('Register'),
                     ),
@@ -408,8 +411,10 @@ class _HypothesesSection extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.label,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    item.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Text(item.explanation),
                 ],
               ),

@@ -22,6 +22,12 @@ from app.services.ai.response_parser import AIResponseParser
 from app.services.ai.trust_score import TrustScoreEngine, trust_level_for_score
 from app.services.discovery.usage_tracker import DiscoveryUsageTracker
 
+AUTH_HEADERS = {"Authorization": "Bearer mock-valid-token"}
+
+
+def authenticated_client() -> TestClient:
+    return TestClient(app, headers=AUTH_HEADERS)
+
 
 @pytest.fixture(autouse=True)
 def reset_database() -> Generator[None, None, None]:
@@ -34,12 +40,11 @@ def reset_database() -> Generator[None, None, None]:
 
 
 def test_ai_diagnosis_without_context_is_structured() -> None:
-    response = TestClient(app).post(
+    response = authenticated_client().post(
         "/ai/diagnosis",
         json={
             "question": "Pourquoi les feuilles de mes tomates jaunissent ?",
             "language": "fr",
-            "discovery_session_id": "diagnosis-session",
         },
     )
 
@@ -60,16 +65,11 @@ def test_ai_diagnosis_without_context_is_structured() -> None:
     }
     assert diagnosis["language"] == "fr"
     assert 0 <= diagnosis["trust_score"]["score"] <= 100
-    assert body["usage"] == {
-        "mode": "discovery",
-        "questions_used": 1,
-        "questions_limit": 3,
-        "remaining": 2,
-    }
+    assert body["usage"]["mode"] == "authenticated"
 
 
 def test_empty_question_is_rejected() -> None:
-    response = TestClient(app).post(
+    response = authenticated_client().post(
         "/ai/diagnosis", json={"question": "   ", "language": "fr"}
     )
 
@@ -77,11 +77,10 @@ def test_empty_question_is_rejected() -> None:
 
 
 def test_complete_context_is_used_and_increases_score() -> None:
-    client = TestClient(app)
+    client = authenticated_client()
     profile = client.post(
         "/farmer/profile",
         json={
-            "user_id": "context-user",
             "display_name": "Ferme Atlas",
             "user_type": "farmer",
             "country": "Maroc",
@@ -92,7 +91,6 @@ def test_complete_context_is_used_and_increases_score() -> None:
     farm = client.post(
         "/farms",
         json={
-            "user_id": "context-user",
             "name": "Ferme Atlas",
             "country": "Maroc",
             "region": "Souss-Massa",
@@ -131,7 +129,6 @@ def test_complete_context_is_used_and_increases_score() -> None:
         json={
             "question": "Pourquoi les feuilles de mes tomates jaunissent ?",
             "language": "fr",
-            "discovery_session_id": "without-context",
         },
     ).json()
     with_context = client.post(
@@ -139,7 +136,6 @@ def test_complete_context_is_used_and_increases_score() -> None:
         json={
             "question": "Pourquoi les feuilles de mes tomates jaunissent ?",
             "language": "fr",
-            "user_id": "context-user",
             "farm_id": farm["farm_id"],
             "field_id": field["field_id"],
             "crop_id": crop["crop_id"],
@@ -161,7 +157,7 @@ def test_complete_context_is_used_and_increases_score() -> None:
 
 
 def test_missing_context_resource_returns_404() -> None:
-    response = TestClient(app).post(
+    response = authenticated_client().post(
         "/ai/diagnosis",
         json={
             "question": "Pourquoi cette culture jaunit-elle ?",
@@ -194,7 +190,7 @@ def test_provider_errors_are_controlled(
     )
     app.dependency_overrides[get_ai_orchestrator] = lambda: orchestrator
 
-    response = TestClient(app).post(
+    response = authenticated_client().post(
         "/ai/diagnosis", json={"question": "Pourquoi la plante jaunit-elle ?"}
     )
 

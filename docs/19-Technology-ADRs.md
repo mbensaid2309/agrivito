@@ -840,3 +840,56 @@ Elle permet de livrer vite, tester le marché, apprendre avec les premiers agric
 ---
 
 **Statut : APPROVED**
+
+---
+
+# ADR-017 - Supabase Auth for MVP
+
+## Contexte
+
+Le MVP doit fournir une identité réelle, restaurer les sessions et isoler les
+données de chaque agriculteur. Cognito reste cohérent avec la cible AWS, mais
+son intégration immédiate augmente coût et délai des tests produit.
+
+## Décision
+
+Supabase Auth est retenu pour le MVP. Flutter utilise le SDK uniquement pour
+l'identité. FastAPI valide les JWT et transforme le claim `sub` en
+`CurrentUser`. Les services métier dépendent de cette identité neutre, jamais
+directement de Supabase.
+
+Cette ADR remplace la décision opérationnelle d'ADR-005 pour la phase MVP ;
+Cognito reste une option future et non une implémentation du Sprint 8.
+
+## Alternatives
+
+- Amazon Cognito dès maintenant : cohérent avec AWS, mais plus coûteux et long.
+- Authentification maison : rejetée pour ses risques sécurité et maintenance.
+- Firebase Auth : rejeté afin de limiter fournisseurs et couplage.
+
+## Conséquences
+
+- les parcours d'identité réels sont disponibles dans Flutter ;
+- les appels privés transportent un Bearer token ;
+- FastAPI reste l'unique accès aux tables métier ;
+- le mode découverte demeure public et strictement séparé.
+
+## Sécurité
+
+FastAPI vérifie signature, expiration, issuer, audience et subject. JWKS est
+préféré ; HS256 n'est qu'un repli backend explicite. Aucun token, secret JWT ou
+clé `service_role` n'est journalisé ou versionné. Le client ne choisit jamais
+son `user_id` et Flutter n'accède jamais directement aux tables métier.
+
+## Réversibilité
+
+`AuthProvider` et `AuthenticatedUser` isolent le fournisseur. Les services et
+colonnes de propriété utilisent un subject opaque, sans type Supabase.
+
+## Migration future vers Cognito
+
+Une migration future ajoutera `CognitoAuthProvider`, adaptera Flutter et
+définira une stratégie explicite de correspondance des subjects. Aucune
+migration automatique d'identités ou de données n'est réalisée ici.
+
+**Statut : APPROVED - Sprint 8**

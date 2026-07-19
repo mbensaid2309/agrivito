@@ -70,30 +70,28 @@ class _FarmsScreenState extends State<FarmsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _ErrorState(message: _error!, onRetry: _loadFarms)
-              : _farms.isEmpty
-                  ? const Center(child: Text('Aucune exploitation enregistrée.'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _farms.length,
-                      itemBuilder: (context, index) {
-                        final farm = _farms[index];
-                        return ListTile(
-                          leading: const Icon(Icons.agriculture_outlined),
-                          title: Text(farm.name),
-                          subtitle: Text('${farm.locality}, ${farm.region}'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => FarmDetailScreen(
-                                farm: farm,
-                                api: widget.api,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+          ? _ErrorState(message: _error!, onRetry: _loadFarms)
+          : _farms.isEmpty
+          ? const Center(child: Text('Aucune exploitation enregistrée.'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _farms.length,
+              itemBuilder: (context, index) {
+                final farm = _farms[index];
+                return ListTile(
+                  leading: const Icon(Icons.agriculture_outlined),
+                  title: Text(farm.name),
+                  subtitle: Text('${farm.locality}, ${farm.region}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          FarmDetailScreen(farm: farm, api: widget.api),
                     ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Créer une exploitation',
         onPressed: _isLoading ? null : _createFarm,
@@ -138,7 +136,6 @@ class _CreateFarmDialogState extends State<_CreateFarmDialog> {
     Navigator.of(context).pop(
       FarmData(
         id: '',
-        userId: 'mobile-user',
         name: _name.text.trim(),
         country: _country.text.trim(),
         region: _region.text.trim(),

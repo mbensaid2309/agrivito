@@ -29,6 +29,8 @@ jobs:
       VISION_PROVIDER: openai
       VISION_MODE: mock
       PHOTO_DIAGNOSIS_DISCOVERY_LIMIT: 1
+      AUTH_PROVIDER: supabase
+      AUTH_MODE: mock
       MEDIA_STORAGE_PROVIDER: local
       MEDIA_LOCAL_PATH: /tmp/agrivito-media
       MEDIA_MAX_SIZE_MB: 10

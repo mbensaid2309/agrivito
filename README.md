@@ -2,30 +2,28 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 7
+## Objectif Sprint 8
 
-Le Sprint 7 ajoute le premier diagnostic photo prudent Agrivito :
+Le Sprint 8 ajoute une authentification reelle et la propriete des donnees :
 
-- lecture privee d'une photo deja uploadee via `MediaStorageProvider` ;
-- `OpenAIVisionProvider` et `MockVisionProvider` isoles derriere FastAPI ;
-- qualite photo et Trust Score visuel calcules par Agrivito ;
-- observations, hypotheses, recommandations, questions et precautions ;
-- demande de reprise pour une image pauvre ou inutilisable ;
-- table PostgreSQL `diagnoses` sans image ni reponse brute fournisseur ;
-- affichage complet dans Flutter et limite decouverte d'une analyse ;
-- maintien des fonctionnalites des Sprints 1 a 6.
+- Supabase Auth dans Flutter pour inscription, connexion, restauration de session,
+  mot de passe oublie et deconnexion ;
+- validation des JWT par FastAPI derriere une abstraction `AuthProvider` ;
+- endpoints prives scopes par le subject authentifie, sans `user_id` libre ;
+- isolation des profils, exploitations, parcelles, cultures, medias et diagnostics ;
+- endpoints decouverte publics et separes, avec les limites existantes ;
+- mode mock deterministe pour les tests et la CI, sans appel Supabase reel.
 
 Architecture :
 
 ```text
-Flutter -> FastAPI -> PhotoDiagnosisOrchestrator
-                   -> MediaStorageProvider -> image privee
-                   -> VisionProvider -> mock ou OpenAI Vision
-                   -> qualite + Trust Score -> PostgreSQL
+Flutter -> Supabase Auth -> JWT
+Flutter -> FastAPI -> AuthProvider -> CurrentUser -> services metier
+                   -> PostgreSQL avec filtrage par proprietaire
 ```
 
-Supabase fournit uniquement l'hebergement PostgreSQL du MVP. Le mobile ne
-communique jamais directement avec Supabase et aucun SDK Supabase n'est utilise.
+Flutter utilise Supabase uniquement pour l'identite. Les donnees metier passent
+toujours par FastAPI ; aucun acces Flutter direct a PostgREST n'est autorise.
 
 ## Stack validee
 
@@ -34,8 +32,7 @@ communique jamais directement avec Supabase et aucun SDK Supabase n'est utilise.
 | Mobile | Flutter |
 | Backend API | Python FastAPI |
 | Cloud cible | AWS |
-| Acceleration mobile/cloud | AWS Amplify |
-| Authentification | Amazon Cognito via Amplify Auth |
+| Authentification MVP | Supabase Auth, abstrait pour une migration future |
 | Stockage media | Local en developpement, Amazon S3 prive via FastAPI en cible |
 | Base de donnees | Amazon RDS PostgreSQL |
 | IA | OpenAI API via backend uniquement |
@@ -51,7 +48,8 @@ agrivito/
  │    ├── PROMPT-CODEX-SPRINT-1.md
  │    ├── PROMPT-CODEX-SPRINT-5.md
  │    ├── PROMPT-CODEX-SPRINT-6.md
- │    └── PROMPT-CODEX-SPRINT-7.md
+ │    ├── PROMPT-CODEX-SPRINT-7.md
+ │    └── PROMPT-CODEX-SPRINT-8.md
  ├── apps/
  │    └── mobile/
  ├── services/
@@ -76,6 +74,7 @@ cp .env.example .env
 # AI_MODE=mock fonctionne sans cle OpenAI
 # MEDIA_STORAGE_PROVIDER=local ne requiert aucun secret AWS
 # VISION_MODE=mock fonctionne sans cle OpenAI
+# AUTH_MODE=mock fonctionne sans Supabase reel
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
@@ -98,25 +97,27 @@ Diagnostic texte structure :
 
 ```bash
 curl -X POST http://127.0.0.1:8000/ai/diagnosis \
+  -H "authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "content-type: application/json" \
-  -d '{"question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr","discovery_session_id":"temporary-session-id"}'
+  -d '{"question":"Pourquoi les feuilles de mes tomates jaunissent ?","language":"fr"}'
 ```
 
 Upload photo local :
 
 ```bash
-curl -X POST http://127.0.0.1:8000/media/upload \
+curl -X POST http://127.0.0.1:8000/discovery/media/upload \
   -F "file=@/chemin/vers/tomate.jpg;type=image/jpeg" \
   -F "discovery_session_id=temporary-photo-session"
 ```
 
-Les metadonnees sont relues avec `GET /media/{media_id}`. Le contenu binaire
-n'est jamais stocke dans PostgreSQL et aucune URL publique n'est generee.
+Pour un utilisateur authentifie, les metadonnees privees sont relues avec
+`GET /media/{media_id}` et le JWT. Le contenu binaire n'est jamais stocke dans
+PostgreSQL et aucune URL publique n'est generee.
 
 Diagnostic photo structure :
 
 ```bash
-curl -X POST http://127.0.0.1:8000/ai/photo-diagnosis \
+curl -X POST http://127.0.0.1:8000/discovery/photo-diagnosis \
   -H "content-type: application/json" \
   -d '{"media_id":"MEDIA_ID","question":"Pourquoi les feuilles sont-elles tachees ?","language":"fr","discovery_session_id":"temporary-photo-session"}'
 ```
@@ -129,7 +130,10 @@ disponibles dans la documentation interactive FastAPI sur `/docs`.
 ```bash
 cd apps/mobile
 flutter pub get
-flutter run --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000
+flutter run \
+  --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=PUBLIC_ANON_KEY
 ```
 
 Sur emulateur Android, utiliser plutot :
@@ -161,11 +165,11 @@ flutter test
 - Ne jamais stocker de secret dans Git.
 - Ne jamais appeler OpenAI depuis le mobile.
 - Garder les evolutions limitees au sprint valide.
-- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 7.
+- Respecter les documents approuves dans `docs/`, notamment le plan Sprint 8.
 
 ## Limites connues
 
-- L'authentification Cognito et AWS RDS ne sont pas integres.
+- Cognito et AWS RDS ne sont pas integres ; Cognito reste la cible reversible.
 - Le mode decouverte est limite a trois questions et n'est pas persiste.
 - Le mode decouverte photo est limite a une photo par session en memoire.
 - Le stockage local est utilise par defaut ; S3 est prepare mais non deploye.
@@ -176,7 +180,6 @@ flutter test
 - Le diagnostic reste une assistance prudente, jamais une maladie garantie.
 - La comparaison multi-images, la video, la voix, le RAG et l'historique
   avance ne sont pas inclus.
-- Supabase est utilise uniquement comme PostgreSQL manage temporaire ; la cible
-  cloud reste AWS RDS PostgreSQL.
-- L'identite mobile reste mockee tant que Cognito n'est pas integre.
+- Supabase fournit Auth et PostgreSQL manage temporaire pour le MVP ; la cible
+  cloud reste AWS et les services metier restent independants du fournisseur.
 - Aucun deploiement automatique n'est inclus.

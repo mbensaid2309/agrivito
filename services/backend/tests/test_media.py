@@ -31,6 +31,7 @@ from app.storage.s3_storage import S3MediaStorage
 JPEG = b"\xff\xd8\xff\xe0" + b"jpeg-content"
 PNG = b"\x89PNG\r\n\x1a\n" + b"png-content"
 WEBP = b"RIFF\x10\x00\x00\x00WEBP" + b"webp-content"
+AUTH_HEADERS = {"Authorization": "Bearer mock-valid-token"}
 
 
 @pytest.fixture
@@ -46,7 +47,7 @@ def media_client(
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     app.dependency_overrides[get_media_storage_provider] = lambda: media_storage
-    with TestClient(app) as client:
+    with TestClient(app, headers=AUTH_HEADERS) as client:
         yield client
     app.dependency_overrides.clear()
     Base.metadata.drop_all(engine)
@@ -245,13 +246,13 @@ def test_discovery_mode_is_limited_to_one_photo(
 ) -> None:
     payload = {"discovery_session_id": "photo-session"}
     first = media_client.post(
-        "/media/upload",
+        "/discovery/media/upload",
         data=payload,
         files={"file": ("first.jpg", JPEG, "image/jpeg")},
     )
     second = media_client.post(
-        "/media/upload",
-        data={**payload, "user_id": "   "},
+        "/discovery/media/upload",
+        data=payload,
         files={"file": ("second.jpg", JPEG, "image/jpeg")},
     )
 
@@ -312,7 +313,6 @@ def _create_farm(client: TestClient, name: str) -> str:
     response = client.post(
         "/farms",
         json={
-            "user_id": f"user-{name}",
             "name": name,
             "country": "Maroc",
             "region": "Souss-Massa",

@@ -14,8 +14,10 @@ from app.services.agriculture.exceptions import (
 
 
 class FieldService:
-    def create(self, db: Session, farm_id: str, payload: FieldCreate) -> Field:
-        if db.get(Farm, farm_id) is None:
+    def create(
+        self, db: Session, owner_id: str, farm_id: str, payload: FieldCreate
+    ) -> Field:
+        if self._owned_farm(db, owner_id, farm_id) is None:
             raise ResourceNotFoundError("Farm not found.")
         field = Field(farm_id=farm_id, **payload.model_dump())
         db.add(field)
@@ -27,8 +29,10 @@ class FieldService:
         db.refresh(field)
         return field
 
-    def list_for_farm(self, db: Session, farm_id: str) -> list[Field]:
-        if db.get(Farm, farm_id) is None:
+    def list_for_farm(
+        self, db: Session, owner_id: str, farm_id: str
+    ) -> list[Field]:
+        if self._owned_farm(db, owner_id, farm_id) is None:
             raise ResourceNotFoundError("Farm not found.")
         statement = (
             select(Field)
@@ -37,5 +41,15 @@ class FieldService:
         )
         return list(db.scalars(statement))
 
-    def get(self, db: Session, field_id: str) -> Field | None:
-        return db.get(Field, field_id)
+    def get(self, db: Session, owner_id: str, field_id: str) -> Field | None:
+        return db.scalar(
+            select(Field)
+            .join(Farm, Field.farm_id == Farm.farm_id)
+            .where(Field.field_id == field_id, Farm.user_id == owner_id)
+        )
+
+    @staticmethod
+    def _owned_farm(db: Session, owner_id: str, farm_id: str) -> Farm | None:
+        return db.scalar(
+            select(Farm).where(Farm.farm_id == farm_id, Farm.user_id == owner_id)
+        )

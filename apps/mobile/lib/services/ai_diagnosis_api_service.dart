@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../models/ai_diagnosis_models.dart';
+import 'auth_service.dart';
 
 abstract interface class AIDiagnosisApi {
   Future<AIDiagnosisResponseData> diagnose({
@@ -15,9 +16,12 @@ abstract interface class AIDiagnosisApi {
 }
 
 class AIDiagnosisApiService implements AIDiagnosisApi {
-  const AIDiagnosisApiService({http.Client? client}) : _client = client;
+  const AIDiagnosisApiService({http.Client? client, AuthService? authService})
+    : _client = client,
+      _authService = authService;
 
   final http.Client? _client;
+  final AuthService? _authService;
 
   @override
   Future<AIDiagnosisResponseData> diagnose({
@@ -28,15 +32,17 @@ class AIDiagnosisApiService implements AIDiagnosisApi {
   }) async {
     final client = _client ?? http.Client();
     try {
+      final isAuthenticated = _authService?.hasSession ?? true;
       final payload = <String, dynamic>{
         'question': question,
         'language': language,
-        'discovery_session_id': discoverySessionId,
+        if (!isAuthenticated) 'session_id': discoverySessionId,
         ...context.toJson(),
       };
+      final path = isAuthenticated ? '/ai/diagnosis' : '/discovery/question';
       final response = await client
           .post(
-            Uri.parse('${AppConfig.backendBaseUrl}/ai/diagnosis'),
+            Uri.parse('${AppConfig.backendBaseUrl}$path'),
             headers: {'content-type': 'application/json'},
             body: jsonEncode(payload),
           )
@@ -70,7 +76,10 @@ class AIDiagnosisApiService implements AIDiagnosisApi {
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return AIDiagnosisResponseData.fromJson(json);
+      if (isAuthenticated) {
+        return AIDiagnosisResponseData.fromJson(json);
+      }
+      return _fromDiscovery(json, language);
     } on AIDiagnosisApiException {
       rethrow;
     } on FormatException catch (_) {
@@ -88,6 +97,50 @@ class AIDiagnosisApiService implements AIDiagnosisApi {
         client.close();
       }
     }
+  }
+
+  static AIDiagnosisResponseData _fromDiscovery(
+    Map<String, dynamic> json,
+    String language,
+  ) {
+    final answer = json['answer'] as Map<String, dynamic>;
+    final usage = json['usage'] as Map<String, dynamic>;
+    final trust = Map<String, dynamic>.from(
+      answer['trust_score'] as Map<String, dynamic>,
+    );
+    const levels = {
+      'élevé': 'high',
+      'moyen': 'medium',
+      'faible': 'low',
+      'insuffisant': 'insufficient',
+    };
+    trust['level'] = levels[trust['level']] ?? 'insufficient';
+    return AIDiagnosisResponseData(
+      diagnosis: DiagnosisData(
+        summary: answer['summary'] as String,
+        observations: const [],
+        hypotheses: const [],
+        recommendations: [answer['response'] as String],
+        followUpQuestions: (answer['follow_up_questions'] as List<dynamic>)
+            .cast<String>(),
+        precautions: (answer['precautions'] as List<dynamic>).cast<String>(),
+        trustScore: DiagnosisTrustScoreData.fromJson(trust),
+        responseMode: 'hypotheses',
+        language: language,
+      ),
+      contextUsed: const DiagnosisContextUsedData(
+        farmerProfile: false,
+        farm: false,
+        field: false,
+        crop: false,
+      ),
+      usage: DiagnosisUsageData(
+        mode: 'discovery',
+        questionsUsed: usage['questions_used'] as int?,
+        questionsLimit: usage['questions_limit'] as int?,
+        remaining: usage['remaining'] as int?,
+      ),
+    );
   }
 }
 

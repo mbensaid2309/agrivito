@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../models/photo_diagnosis_models.dart';
+import 'auth_service.dart';
 
 enum PhotoDiagnosisApiErrorKind {
   validation,
@@ -32,9 +33,14 @@ abstract interface class PhotoDiagnosisApi {
 }
 
 class PhotoDiagnosisApiService implements PhotoDiagnosisApi {
-  const PhotoDiagnosisApiService({http.Client? client}) : _client = client;
+  const PhotoDiagnosisApiService({
+    http.Client? client,
+    AuthService? authService,
+  }) : _client = client,
+       _authService = authService;
 
   final http.Client? _client;
+  final AuthService? _authService;
 
   @override
   Future<PhotoDiagnosisResponseData> diagnose({
@@ -46,15 +52,19 @@ class PhotoDiagnosisApiService implements PhotoDiagnosisApi {
   }) async {
     final client = _client ?? http.Client();
     try {
+      final isAuthenticated = _authService?.hasSession ?? true;
+      final path = isAuthenticated
+          ? '/ai/photo-diagnosis'
+          : '/discovery/photo-diagnosis';
       final response = await client
           .post(
-            Uri.parse('${AppConfig.backendBaseUrl}/ai/photo-diagnosis'),
+            Uri.parse('${AppConfig.backendBaseUrl}$path'),
             headers: {'content-type': 'application/json'},
             body: jsonEncode({
               'media_id': mediaId.trim(),
               'question': question.trim(),
               'language': language,
-              'discovery_session_id': discoverySessionId,
+              if (!isAuthenticated) 'discovery_session_id': discoverySessionId,
               ...context.toJson(),
             }),
           )

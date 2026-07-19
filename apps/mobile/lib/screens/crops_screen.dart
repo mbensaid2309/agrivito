@@ -53,9 +53,9 @@ class _CropsScreenState extends State<CropsScreen> {
       final crop = await widget.api.createCrop(draft);
       if (!mounted) return;
       setState(() => _crops = [..._crops, crop]);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Culture enregistrée.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Culture enregistrée.')));
     } on AgricultureApiException catch (error) {
       if (!mounted) return;
       setState(() => _error = error.message);
@@ -69,24 +69,24 @@ class _CropsScreenState extends State<CropsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
-              : _crops.isEmpty
-                  ? const Center(child: Text('Aucune culture enregistrée.'))
-                  : RefreshIndicator(
-                      onRefresh: _loadCrops,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _crops.length,
-                        itemBuilder: (context, index) {
-                          final crop = _crops[index];
-                          return ListTile(
-                            leading: const Icon(Icons.grass_outlined),
-                            title: Text(crop.name),
-                            subtitle: Text('${crop.category} · ${crop.growthStage}'),
-                          );
-                        },
-                      ),
-                    ),
+          ? Center(child: Text(_error!))
+          : _crops.isEmpty
+          ? const Center(child: Text('Aucune culture enregistrée.'))
+          : RefreshIndicator(
+              onRefresh: _loadCrops,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _crops.length,
+                itemBuilder: (context, index) {
+                  final crop = _crops[index];
+                  return ListTile(
+                    leading: const Icon(Icons.grass_outlined),
+                    title: Text(crop.name),
+                    subtitle: Text('${crop.category} · ${crop.growthStage}'),
+                  );
+                },
+              ),
+            ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Créer une culture',
         onPressed: _isLoading ? null : _createCrop,
@@ -158,26 +158,52 @@ class _CreateCropDialogState extends State<_CreateCropDialog> {
                 decoration: const InputDecoration(labelText: 'Catégorie'),
                 items: const [
                   DropdownMenuItem(value: 'vegetable', child: Text('Légume')),
-                  DropdownMenuItem(value: 'fruit_tree', child: Text('Arbre fruitier')),
+                  DropdownMenuItem(
+                    value: 'fruit_tree',
+                    child: Text('Arbre fruitier'),
+                  ),
                   DropdownMenuItem(value: 'cereal', child: Text('Céréale')),
                   DropdownMenuItem(value: 'legume', child: Text('Légumineuse')),
-                  DropdownMenuItem(value: 'industrial_crop', child: Text('Culture industrielle')),
+                  DropdownMenuItem(
+                    value: 'industrial_crop',
+                    child: Text('Culture industrielle'),
+                  ),
                   DropdownMenuItem(value: 'other', child: Text('Autre')),
-                  DropdownMenuItem(value: 'unknown', child: Text('Non précisée')),
+                  DropdownMenuItem(
+                    value: 'unknown',
+                    child: Text('Non précisée'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _category = value!),
               ),
               DropdownButtonFormField<String>(
                 initialValue: _growthStage,
-                decoration: const InputDecoration(labelText: 'Stade de culture'),
+                decoration: const InputDecoration(
+                  labelText: 'Stade de culture',
+                ),
                 items: const [
                   DropdownMenuItem(value: 'seedling', child: Text('Plantule')),
-                  DropdownMenuItem(value: 'vegetative', child: Text('Végétatif')),
-                  DropdownMenuItem(value: 'flowering', child: Text('Floraison')),
-                  DropdownMenuItem(value: 'fruiting', child: Text('Fructification')),
+                  DropdownMenuItem(
+                    value: 'vegetative',
+                    child: Text('Végétatif'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'flowering',
+                    child: Text('Floraison'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'fruiting',
+                    child: Text('Fructification'),
+                  ),
                   DropdownMenuItem(value: 'harvest', child: Text('Récolte')),
-                  DropdownMenuItem(value: 'post_harvest', child: Text('Après récolte')),
-                  DropdownMenuItem(value: 'unknown', child: Text('Non précisé')),
+                  DropdownMenuItem(
+                    value: 'post_harvest',
+                    child: Text('Après récolte'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'unknown',
+                    child: Text('Non précisé'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _growthStage = value!),
               ),
@@ -186,7 +212,10 @@ class _CreateCropDialogState extends State<_CreateCropDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Annuler')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuler'),
+        ),
         FilledButton(onPressed: _submit, child: const Text('Créer')),
       ],
     );

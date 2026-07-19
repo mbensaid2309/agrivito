@@ -504,3 +504,32 @@ La priorité est de livrer vite une première version fiable qui permet à l’a
 ---
 
 **Statut :APPROVED**
+
+---
+
+# Extension Sprint 8 - Supabase Auth
+
+```text
+Flutter
+  |-- Supabase Auth (identité uniquement) -> session JWT
+  `-- FastAPI + Authorization Bearer
+          |-- AuthProvider
+          |     |-- SupabaseAuthProvider (live)
+          |     `-- MockAuthProvider (tests/CI)
+          |-- CurrentUser issu du claim sub
+          `-- services filtrés par propriétaire -> PostgreSQL
+```
+
+Supabase est retenu pour l'identité du MVP afin de réduire coût et délai.
+Flutter n'utilise ni PostgREST ni le SDK Database. FastAPI reste l'unique
+frontière métier et valide lui-même les JWT. Les services reçoivent une identité
+neutre, ce qui conserve la possibilité d'un provider Cognito futur.
+
+Les rôles Data API n'ont aucun privilège direct sur les tables métier et RLS
+reste activée comme défense supplémentaire. Le contrôle autoritatif actuel est
+le filtrage par propriétaire dans FastAPI et SQLAlchemy.
+
+Le mode découverte utilise des routes publiques séparées. La CI utilise le
+provider mock ; aucun appel Supabase, OpenAI ou AWS réel n'est requis.
+
+**Statut de l'extension : APPROVED - Sprint 8**

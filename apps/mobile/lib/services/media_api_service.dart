@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../config/app_config.dart';
 import '../models/media_models.dart';
+import 'auth_service.dart';
 
 enum MediaApiErrorKind { validation, network, backend, discoveryLimit }
 
@@ -24,9 +25,12 @@ abstract interface class MediaApi {
 }
 
 class MediaApiService implements MediaApi {
-  const MediaApiService({http.Client? client}) : _client = client;
+  const MediaApiService({http.Client? client, AuthService? authService})
+    : _client = client,
+      _authService = authService;
 
   final http.Client? _client;
+  final AuthService? _authService;
 
   @override
   Future<MediaData> upload({
@@ -35,11 +39,19 @@ class MediaApiService implements MediaApi {
   }) async {
     final client = _client ?? http.Client();
     try {
+      final isAuthenticated = _authService?.hasSession ?? true;
+      final path = isAuthenticated
+          ? '/media/upload'
+          : '/discovery/media/upload';
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('${AppConfig.backendBaseUrl}/media/upload'),
+        Uri.parse('${AppConfig.backendBaseUrl}$path'),
       );
-      request.fields.addAll(context.toFields());
+      final fields = context.toFields();
+      if (isAuthenticated) {
+        fields.remove('discovery_session_id');
+      }
+      request.fields.addAll(fields);
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
@@ -48,9 +60,9 @@ class MediaApiService implements MediaApi {
           contentType: MediaType.parse(media.contentType),
         ),
       );
-      final streamed = await client.send(request).timeout(
-            const Duration(seconds: 35),
-          );
+      final streamed = await client
+          .send(request)
+          .timeout(const Duration(seconds: 35));
       final response = await http.Response.fromStream(streamed);
 
       if (response.statusCode == 400 ||

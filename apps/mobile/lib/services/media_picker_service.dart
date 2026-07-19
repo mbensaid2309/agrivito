@@ -25,7 +25,7 @@ abstract interface class MediaPicker {
 
 class ImagePickerMediaPicker implements MediaPicker {
   ImagePickerMediaPicker({ImagePicker? picker})
-      : _picker = picker ?? ImagePicker();
+    : _picker = picker ?? ImagePicker();
 
   final ImagePicker _picker;
 

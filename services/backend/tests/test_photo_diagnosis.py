@@ -132,14 +132,17 @@ def test_photo_diagnosis_is_structured_and_persisted(
 
 
 def test_media_id_is_required(photo_client: TestClient) -> None:
-    response = photo_client.post("/ai/photo-diagnosis", json={})
+    response = photo_client.post("/discovery/photo-diagnosis", json={})
     assert response.status_code == 422
 
 
 def test_missing_media_returns_404(photo_client: TestClient) -> None:
     response = photo_client.post(
-        "/ai/photo-diagnosis",
-        json={"media_id": "00000000-0000-0000-0000-000000000000"},
+        "/discovery/photo-diagnosis",
+        json={
+            "media_id": "00000000-0000-0000-0000-000000000000",
+            "discovery_session_id": "missing-session",
+        },
     )
     assert response.status_code == 404
 
@@ -362,7 +365,7 @@ def test_visual_trust_score_increases_with_context_and_quality() -> None:
 
 def _upload(client: TestClient, *, session: str) -> str:
     response = client.post(
-        "/media/upload",
+        "/discovery/media/upload",
         data={"discovery_session_id": session},
         files={"file": ("leaf.jpg", JPEG, "image/jpeg")},
     )
@@ -377,7 +380,7 @@ def _diagnose(
     question: str = "Pourquoi les feuilles sont-elles tachées ?",
 ):
     return client.post(
-        "/ai/photo-diagnosis",
+        "/discovery/photo-diagnosis",
         json={
             "media_id": media_id,
             "question": question,

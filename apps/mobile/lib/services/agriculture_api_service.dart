@@ -26,7 +26,11 @@ class AgricultureApiService implements AgricultureApi {
 
   @override
   Future<FarmerProfileData?> getFarmerProfile() async {
-    final response = await _request('GET', '/farmer/profile', allowNotFound: true);
+    final response = await _request(
+      'GET',
+      '/farmer/profile',
+      allowNotFound: true,
+    );
     if (response == null) {
       return null;
     }

@@ -24,8 +24,9 @@ void main() {
     expect(find.byType(PhotoDiagnosisScreen), findsOneWidget);
   });
 
-  testWidgets('selected media, question, loading and all result sections',
-      (tester) async {
+  testWidgets('selected media, question, loading and all result sections', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -58,8 +59,10 @@ void main() {
     ]) {
       expect(find.text(text), findsWidgets);
     }
-    expect(find.byKey(const Key('photo-diagnosis-limit-invitation')),
-        findsOneWidget);
+    expect(
+      find.byKey(const Key('photo-diagnosis-limit-invitation')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('poor photo displays retake instructions', (tester) async {
@@ -67,12 +70,16 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester
-        .pumpWidget(_screen(FakePhotoDiagnosisApi(_result(retake: true))));
+    await tester.pumpWidget(
+      _screen(FakePhotoDiagnosisApi(_result(retake: true))),
+    );
     await tester.tap(find.byKey(const Key('photo-diagnosis-submit')));
     await tester.pumpAndSettle();
     expect(find.text('La photo n’est pas assez nette.'), findsOneWidget);
-    expect(find.textContaining('Prenez une photo plus proche.'), findsOneWidget);
+    expect(
+      find.textContaining('Prenez une photo plus proche.'),
+      findsOneWidget,
+    );
   });
 
   for (final entry in {
@@ -99,22 +106,22 @@ void main() {
 }
 
 Widget _screen(PhotoDiagnosisApi api) => MaterialApp(
-      home: PhotoDiagnosisScreen(
-        api: api,
-        initialMedia: _media(),
-        discoverySessionId: 'session-1',
-      ),
-    );
+  home: PhotoDiagnosisScreen(
+    api: api,
+    initialMedia: _media(),
+    discoverySessionId: 'session-1',
+  ),
+);
 
 MediaData _media() => MediaData(
-      id: 'media-1',
-      originalFilename: 'leaf.jpg',
-      contentType: 'image/jpeg',
-      sizeBytes: 2048,
-      storageProvider: 'local',
-      status: 'uploaded',
-      createdAt: DateTime.utc(2026, 7, 19),
-    );
+  id: 'media-1',
+  originalFilename: 'leaf.jpg',
+  contentType: 'image/jpeg',
+  sizeBytes: 2048,
+  storageProvider: 'local',
+  status: 'uploaded',
+  createdAt: DateTime.utc(2026, 7, 19),
+);
 
 PhotoDiagnosisResponseData _result({bool retake = false}) =>
     PhotoDiagnosisResponseData(
@@ -174,8 +181,7 @@ class FakePhotoDiagnosisApi implements PhotoDiagnosisApi {
     required String language,
     required String discoverySessionId,
     PhotoDiagnosisContext context = const PhotoDiagnosisContext(),
-  }) async =>
-      result;
+  }) async => result;
 }
 
 class LoadingPhotoDiagnosisApi implements PhotoDiagnosisApi {

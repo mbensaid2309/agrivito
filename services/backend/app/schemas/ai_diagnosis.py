@@ -11,9 +11,9 @@ UsageMode = Literal["discovery", "authenticated"]
 
 
 class AIDiagnosisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=4000)
     language: DiagnosisLanguage = "fr"
-    user_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     farm_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     field_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
     crop_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
@@ -27,7 +27,6 @@ class AIDiagnosisRequest(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
     @field_validator(
-        "user_id",
         "farm_id",
         "field_id",
         "crop_id",
@@ -85,6 +84,10 @@ class AIDiagnosisResponse(BaseModel):
     diagnosis: DiagnosisContent
     context_used: DiagnosisContextUsed
     usage: DiagnosisUsage
+
+
+class InternalAIDiagnosisRequest(AIDiagnosisRequest):
+    user_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 class AgriculturalContext(BaseModel):

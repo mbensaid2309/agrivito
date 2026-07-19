@@ -27,27 +27,24 @@ class SelectedMedia {
 
 class MediaUploadContext {
   const MediaUploadContext({
-    this.userId,
     this.discoverySessionId,
     this.farmId,
     this.fieldId,
     this.cropId,
   });
 
-  final String? userId;
   final String? discoverySessionId;
   final String? farmId;
   final String? fieldId;
   final String? cropId;
 
   Map<String, String> toFields() => {
-        if (_present(userId)) 'user_id': userId!.trim(),
-        if (_present(discoverySessionId))
-          'discovery_session_id': discoverySessionId!.trim(),
-        if (_present(farmId)) 'farm_id': farmId!.trim(),
-        if (_present(fieldId)) 'field_id': fieldId!.trim(),
-        if (_present(cropId)) 'crop_id': cropId!.trim(),
-      };
+    if (_present(discoverySessionId))
+      'discovery_session_id': discoverySessionId!.trim(),
+    if (_present(farmId)) 'farm_id': farmId!.trim(),
+    if (_present(fieldId)) 'field_id': fieldId!.trim(),
+    if (_present(cropId)) 'crop_id': cropId!.trim(),
+  };
 
   static bool _present(String? value) =>
       value != null && value.trim().isNotEmpty;
@@ -68,17 +65,17 @@ class MediaData {
   });
 
   factory MediaData.fromJson(Map<String, dynamic> json) => MediaData(
-        id: json['id'] as String,
-        originalFilename: json['original_filename'] as String,
-        contentType: json['content_type'] as String,
-        sizeBytes: json['size_bytes'] as int,
-        storageProvider: json['storage_provider'] as String,
-        status: json['status'] as String,
-        createdAt: DateTime.parse(json['created_at'] as String),
-        farmId: json['farm_id'] as String?,
-        fieldId: json['field_id'] as String?,
-        cropId: json['crop_id'] as String?,
-      );
+    id: json['id'] as String,
+    originalFilename: json['original_filename'] as String,
+    contentType: json['content_type'] as String,
+    sizeBytes: json['size_bytes'] as int,
+    storageProvider: json['storage_provider'] as String,
+    status: json['status'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String),
+    farmId: json['farm_id'] as String?,
+    fieldId: json['field_id'] as String?,
+    cropId: json['crop_id'] as String?,
+  );
 
   final String id;
   final String originalFilename;

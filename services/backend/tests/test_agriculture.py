@@ -7,6 +7,9 @@ from app.db.base import Base
 from app.db.database import get_engine
 from app.main import app
 
+AUTH_HEADERS = {"Authorization": "Bearer mock-valid-token"}
+AUTH_USER_ID = "00000000-0000-0000-0000-000000000001"
+
 
 @pytest.fixture(autouse=True)
 def reset_agriculture_database() -> None:
@@ -19,12 +22,11 @@ def reset_agriculture_database() -> None:
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(app)
+    return TestClient(app, headers=AUTH_HEADERS)
 
 
 def test_farmer_profile_flow(client: TestClient) -> None:
     payload = {
-        "user_id": "user-1",
         "display_name": "Ferme Atlas",
         "user_type": "farmer",
         "country": "Maroc",
@@ -41,17 +43,16 @@ def test_farmer_profile_flow(client: TestClient) -> None:
     duplicate = client.post("/farmer/profile", json=payload)
     assert duplicate.status_code == 409
 
-    second_client = TestClient(app)
+    second_client = TestClient(app, headers=AUTH_HEADERS)
     persisted = second_client.get("/farmer/profile")
     assert persisted.status_code == 200
-    assert persisted.json()["user_id"] == "user-1"
+    assert persisted.json()["user_id"] == AUTH_USER_ID
 
 
 def test_farm_field_crop_flow(client: TestClient) -> None:
     farm_response = client.post(
         "/farms",
         json={
-            "user_id": "user-1",
             "name": "Ferme Atlas",
             "country": "Maroc",
             "region": "Souss-Massa",

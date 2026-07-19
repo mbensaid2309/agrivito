@@ -34,6 +34,15 @@ class Settings:
     openai_vision_model: str = ""
     vision_timeout_seconds: float = 45.0
     photo_diagnosis_discovery_limit: int = 1
+    auth_provider: str = "supabase"
+    auth_mode: str = "mock"
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_jwt_secret: str = ""
+    supabase_jwks_url: str = ""
+    auth_audience: str = "authenticated"
+    auth_issuer: str = ""
+    auth_timeout_seconds: float = 10.0
     log_level: str = "INFO"
 
 
@@ -131,6 +140,40 @@ def load_settings() -> Settings:
             "PHOTO_DIAGNOSIS_DISCOVERY_LIMIT must be greater than zero."
         )
 
+    auth_provider = _read_env("AUTH_PROVIDER", "supabase").lower() or "supabase"
+    if auth_provider != "supabase":
+        raise ValueError("AUTH_PROVIDER must be 'supabase'.")
+    auth_mode = _read_env("AUTH_MODE", "mock").lower() or "mock"
+    if auth_mode not in {"mock", "live"}:
+        raise ValueError("AUTH_MODE must be 'mock' or 'live'.")
+    auth_timeout_value = _read_env("AUTH_TIMEOUT_SECONDS", "10") or "10"
+    try:
+        auth_timeout_seconds = float(auth_timeout_value)
+    except ValueError as error:
+        raise ValueError("AUTH_TIMEOUT_SECONDS must be a number.") from error
+    if auth_timeout_seconds <= 0:
+        raise ValueError("AUTH_TIMEOUT_SECONDS must be greater than zero.")
+
+    supabase_url = _read_env("SUPABASE_URL").rstrip("/")
+    supabase_jwks_url = _read_env("SUPABASE_JWKS_URL")
+    auth_issuer = _read_env("AUTH_ISSUER")
+    auth_audience = _read_env("AUTH_AUDIENCE", "authenticated")
+    supabase_jwt_secret = _read_env("SUPABASE_JWT_SECRET")
+    if auth_mode == "live":
+        if not supabase_url:
+            raise ValueError("SUPABASE_URL is required when AUTH_MODE is live.")
+        auth_issuer = auth_issuer or f"{supabase_url}/auth/v1"
+        if not supabase_jwks_url and not supabase_jwt_secret:
+            supabase_jwks_url = f"{auth_issuer}/.well-known/jwks.json"
+        if not auth_audience or not auth_issuer:
+            raise ValueError(
+                "AUTH_AUDIENCE and AUTH_ISSUER are required when AUTH_MODE is live."
+            )
+        if not supabase_jwks_url and not supabase_jwt_secret:
+            raise ValueError(
+                "SUPABASE_JWKS_URL or SUPABASE_JWT_SECRET is required in live mode."
+            )
+
     openai_api_key = _read_env("OPENAI_API_KEY")
     openai_vision_model = _read_env("OPENAI_VISION_MODEL")
     if vision_mode == "live" and not openai_api_key:
@@ -162,6 +205,15 @@ def load_settings() -> Settings:
         openai_vision_model=openai_vision_model,
         vision_timeout_seconds=vision_timeout_seconds,
         photo_diagnosis_discovery_limit=photo_diagnosis_discovery_limit,
+        auth_provider=auth_provider,
+        auth_mode=auth_mode,
+        supabase_url=supabase_url,
+        supabase_anon_key=_read_env("SUPABASE_ANON_KEY"),
+        supabase_jwt_secret=supabase_jwt_secret,
+        supabase_jwks_url=supabase_jwks_url,
+        auth_audience=auth_audience,
+        auth_issuer=auth_issuer,
+        auth_timeout_seconds=auth_timeout_seconds,
         log_level=_read_env("LOG_LEVEL", "INFO") or "INFO",
     )
 

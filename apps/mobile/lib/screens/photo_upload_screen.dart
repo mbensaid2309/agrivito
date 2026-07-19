@@ -39,7 +39,8 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
   @override
   void initState() {
     super.initState();
-    _discoverySessionId = widget.discoverySessionId ??
+    _discoverySessionId =
+        widget.discoverySessionId ??
         'photo-${DateTime.now().microsecondsSinceEpoch}';
   }
 
@@ -90,14 +91,11 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
       _message = 'Envoi en cours...';
     });
     try {
-      final contextFields = widget.context.toFields();
       final result = await widget.mediaApi.upload(
         media: selection,
         context: MediaUploadContext(
-          userId: contextFields['user_id'],
-          discoverySessionId: contextFields['user_id'] == null
-              ? widget.context.discoverySessionId ?? _discoverySessionId
-              : widget.context.discoverySessionId,
+          discoverySessionId:
+              widget.context.discoverySessionId ?? _discoverySessionId,
           farmId: widget.context.farmId,
           fieldId: widget.context.fieldId,
           cropId: widget.context.cropId,
@@ -135,7 +133,8 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isBusy = _state == PhotoUploadState.selecting ||
+    final isBusy =
+        _state == PhotoUploadState.selecting ||
         _state == PhotoUploadState.uploading;
     return Scaffold(
       appBar: AppBar(title: const Text('Envoyer une photo')),
@@ -181,7 +180,6 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
                       initialMedia: _uploadedMedia,
                       discoverySessionId: _discoverySessionId,
                       context: PhotoDiagnosisContext(
-                        userId: widget.context.userId,
                         farmId: widget.context.farmId,
                         fieldId: widget.context.fieldId,
                         cropId: widget.context.cropId,
@@ -199,8 +197,9 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     key: const Key('photo-camera'),
-                    onPressed:
-                        isBusy ? null : () => _pick(MediaPickSource.camera),
+                    onPressed: isBusy
+                        ? null
+                        : () => _pick(MediaPickSource.camera),
                     icon: const Icon(Icons.photo_camera_outlined),
                     label: Text(_selection == null ? 'Caméra' : 'Remplacer'),
                   ),
@@ -209,8 +208,9 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     key: const Key('photo-gallery'),
-                    onPressed:
-                        isBusy ? null : () => _pick(MediaPickSource.gallery),
+                    onPressed: isBusy
+                        ? null
+                        : () => _pick(MediaPickSource.gallery),
                     icon: const Icon(Icons.photo_library_outlined),
                     label: const Text('Galerie'),
                   ),
@@ -223,8 +223,8 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
                 key: const Key('photo-upload'),
                 onPressed:
                     isBusy || _state == PhotoUploadState.discoveryLimitReached
-                        ? null
-                        : _upload,
+                    ? null
+                    : _upload,
                 icon: _state == PhotoUploadState.uploading
                     ? const SizedBox.square(
                         dimension: 18,
@@ -277,12 +277,12 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
   }
 
   static bool _isErrorState(PhotoUploadState state) => {
-        PhotoUploadState.validationError,
-        PhotoUploadState.permissionError,
-        PhotoUploadState.networkError,
-        PhotoUploadState.backendError,
-        PhotoUploadState.discoveryLimitReached,
-      }.contains(state);
+    PhotoUploadState.validationError,
+    PhotoUploadState.permissionError,
+    PhotoUploadState.networkError,
+    PhotoUploadState.backendError,
+    PhotoUploadState.discoveryLimitReached,
+  }.contains(state);
 }
 
 class _EmptyPreview extends StatelessWidget {

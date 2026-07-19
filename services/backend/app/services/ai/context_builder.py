@@ -30,11 +30,17 @@ class AgriculturalContextBuilder:
     ) -> BuiltAgriculturalContext:
         values: dict[str, object] = {}
         used = DiagnosisContextUsed()
+        owner_id = getattr(request, "user_id", None)
 
-        if request.user_id:
+        if owner_id is None and any(
+            (request.farm_id, request.field_id, request.crop_id)
+        ):
+            raise ResourceNotFoundError("Agricultural context not found.")
+
+        if owner_id:
             profile = db.scalar(
                 select(FarmerProfile).where(
-                    FarmerProfile.user_id == request.user_id
+                    FarmerProfile.user_id == owner_id
                 )
             )
             if profile is not None:
@@ -48,7 +54,7 @@ class AgriculturalContextBuilder:
 
         farm = self._get_farm(db, request.farm_id)
         if farm is not None:
-            if request.user_id and farm.user_id != request.user_id:
+            if owner_id and farm.user_id != owner_id:
                 raise ResourceNotFoundError("Farm not found.")
             values.update(
                 farm_name=farm.name,
@@ -62,6 +68,10 @@ class AgriculturalContextBuilder:
 
         field = self._get_field(db, request.field_id)
         if field is not None:
+            if owner_id:
+                parent = db.get(Farm, field.farm_id)
+                if parent is None or parent.user_id != owner_id:
+                    raise ResourceNotFoundError("Field not found.")
             if farm is not None and field.farm_id != farm.farm_id:
                 raise ResourceNotFoundError("Field not found for this farm.")
             values.update(
@@ -76,6 +86,8 @@ class AgriculturalContextBuilder:
 
         crop = self._get_crop(db, request.crop_id)
         if crop is not None:
+            if owner_id and crop.user_id != owner_id:
+                raise ResourceNotFoundError("Crop not found.")
             if field is not None:
                 association = db.scalar(
                     select(FieldCrop).where(

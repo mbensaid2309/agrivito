@@ -1,22 +1,15 @@
 class AIDiagnosisContext {
-  const AIDiagnosisContext({
-    this.userId,
-    this.farmId,
-    this.fieldId,
-    this.cropId,
-  });
+  const AIDiagnosisContext({this.farmId, this.fieldId, this.cropId});
 
-  final String? userId;
   final String? farmId;
   final String? fieldId;
   final String? cropId;
 
   Map<String, dynamic> toJson() => {
-        if (userId != null) 'user_id': userId,
-        if (farmId != null) 'farm_id': farmId,
-        if (fieldId != null) 'field_id': fieldId,
-        if (cropId != null) 'crop_id': cropId,
-      };
+    if (farmId != null) 'farm_id': farmId,
+    if (fieldId != null) 'field_id': fieldId,
+    if (cropId != null) 'crop_id': cropId,
+  };
 }
 
 class AIDiagnosisResponseData {
@@ -34,9 +27,7 @@ class AIDiagnosisResponseData {
       contextUsed: DiagnosisContextUsedData.fromJson(
         json['context_used'] as Map<String, dynamic>,
       ),
-      usage: DiagnosisUsageData.fromJson(
-        json['usage'] as Map<String, dynamic>,
-      ),
+      usage: DiagnosisUsageData.fromJson(json['usage'] as Map<String, dynamic>),
     );
   }
 
@@ -64,9 +55,8 @@ class DiagnosisData {
       observations: _stringList(json['observations']),
       hypotheses: (json['hypotheses'] as List<dynamic>)
           .map(
-            (item) => DiagnosisHypothesisData.fromJson(
-              item as Map<String, dynamic>,
-            ),
+            (item) =>
+                DiagnosisHypothesisData.fromJson(item as Map<String, dynamic>),
           )
           .toList(growable: false),
       recommendations: _stringList(json['recommendations']),

@@ -13,10 +13,10 @@ class Diagnosis(Base):
     __tablename__ = "diagnoses"
     __table_args__ = (
         CheckConstraint(
-            "diagnosis_type = 'photo'", name="ck_diagnoses_type_photo"
+            "diagnosis_type IN ('text', 'photo')", name="ck_diagnoses_type"
         ),
         CheckConstraint(
-            "photo_quality_score BETWEEN 0 AND 100",
+            "photo_quality_score IS NULL OR photo_quality_score BETWEEN 0 AND 100",
             name="ck_diagnoses_photo_quality_score",
         ),
         CheckConstraint(
@@ -29,7 +29,7 @@ class Diagnosis(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    media_id: Mapped[str] = mapped_column(
+    media_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("media.id", ondelete="CASCADE"), index=True
     )
     user_id: Mapped[Optional[str]] = mapped_column(String(128), index=True)
@@ -46,8 +46,8 @@ class Diagnosis(Base):
     recommendations_json: Mapped[list[Any]] = mapped_column(JSON)
     follow_up_questions_json: Mapped[list[Any]] = mapped_column(JSON)
     precautions_json: Mapped[list[Any]] = mapped_column(JSON)
-    photo_quality_score: Mapped[int] = mapped_column(Integer)
-    photo_quality_level: Mapped[str] = mapped_column(String(16))
+    photo_quality_score: Mapped[Optional[int]] = mapped_column(Integer)
+    photo_quality_level: Mapped[Optional[str]] = mapped_column(String(16))
     trust_score: Mapped[int] = mapped_column(Integer)
     trust_level: Mapped[str] = mapped_column(String(16))
     response_mode: Mapped[str] = mapped_column(String(32))

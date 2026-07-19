@@ -30,6 +30,44 @@ def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.vision_mode == "mock"
     assert settings.vision_timeout_seconds == 45
     assert settings.photo_diagnosis_discovery_limit == 1
+    assert settings.auth_provider == "supabase"
+    assert settings.auth_mode == "mock"
+    assert settings.auth_audience == "authenticated"
+    assert settings.auth_timeout_seconds == 10
+
+
+def test_live_auth_derives_supabase_issuer_and_jwks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AUTH_MODE", "live")
+    monkeypatch.setenv("SUPABASE_URL", "https://project.supabase.co/")
+    monkeypatch.delenv("AUTH_ISSUER", raising=False)
+    monkeypatch.delenv("SUPABASE_JWKS_URL", raising=False)
+
+    settings = load_settings()
+
+    assert settings.auth_issuer == "https://project.supabase.co/auth/v1"
+    assert settings.supabase_jwks_url == (
+        "https://project.supabase.co/auth/v1/.well-known/jwks.json"
+    )
+
+
+def test_live_auth_requires_supabase_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AUTH_MODE", "live")
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+
+    with pytest.raises(ValueError, match="SUPABASE_URL"):
+        load_settings()
+
+
+@pytest.mark.parametrize("value", ["0", "invalid"])
+def test_auth_timeout_must_be_positive_number(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("AUTH_TIMEOUT_SECONDS", value)
+
+    with pytest.raises(ValueError, match="AUTH_TIMEOUT_SECONDS"):
+        load_settings()
 
 
 def test_database_url_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
