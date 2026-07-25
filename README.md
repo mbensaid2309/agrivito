@@ -2,7 +2,24 @@
 
 Agrivito est une plateforme intelligente d'assistance a la decision agricole. Le MVP demarre avec une application mobile Flutter et un backend FastAPI qui centralise la logique metier et les futurs appels IA.
 
-## Objectif Sprint 8
+## Démonstration MVP (Sprint 8.5)
+
+Le parcours complet peut être lancé en modes mock, sans OpenAI, AWS ni compte
+Supabase. PostgreSQL 16 local ou une base de test reste requis. Sans variable,
+le script crée automatiquement un cluster local isolé sous `.demo/` :
+
+```bash
+./scripts/start-demo.sh
+```
+
+Ouvrir ensuite `http://127.0.0.1:8080`. Le compte fictif est
+`agriculteur.demo@agrivito.local` / `DemoAgrivito123!`. Voir
+[`docs/32-MVP-Demo-Guide.md`](docs/32-MVP-Demo-Guide.md) et
+[`docs/33-Product-Review-Checklist.md`](docs/33-Product-Review-Checklist.md).
+
+Arrêt sûr : `./scripts/stop-demo.sh`.
+
+## Socle Sprint 8
 
 Le Sprint 8 ajoute une authentification reelle et la propriete des donnees :
 
@@ -50,6 +67,7 @@ agrivito/
  │    ├── PROMPT-CODEX-SPRINT-6.md
  │    ├── PROMPT-CODEX-SPRINT-7.md
  │    └── PROMPT-CODEX-SPRINT-8.md
+ │    └── PROMPT-CODEX-SPRINT-8-5.md
  ├── apps/
  │    └── mobile/
  ├── services/
@@ -132,6 +150,7 @@ cd apps/mobile
 flutter pub get
 flutter run \
   --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=AUTH_MODE=live \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=PUBLIC_ANON_KEY
 ```
@@ -157,6 +176,7 @@ Mobile :
 cd apps/mobile
 flutter analyze
 flutter test
+flutter build web --dart-define=DEMO_MODE=true --dart-define=AUTH_MODE=mock
 ```
 
 ## Regles de contribution

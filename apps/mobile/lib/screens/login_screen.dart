@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
+import '../widgets/demo_mode_banner.dart';
 import 'chat_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -22,6 +24,15 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String? _message;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.authService is MockAuthService) {
+      _emailController.text = AppConfig.demoEmail;
+      _passwordController.text = AppConfig.demoPassword;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,17 +86,24 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: const Text('Connexion')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const DemoModeBanner(),
+            if (AppConfig.demoMode) const SizedBox(height: 16),
             Text(
               'Connexion Agrivito',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text('Connectez-vous avec votre compte Supabase Auth.'),
+            Text(
+              AppConfig.usesMockAuth
+                  ? 'Utilisez le compte fictif prérempli. Aucun email réel '
+                        'n’est envoyé.'
+                  : 'Connectez-vous avec votre compte Supabase Auth.',
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
@@ -107,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _isLoading ? null : _submit,
-              child: Text(_isLoading ? 'Connexion...' : 'Connexion'),
+              child: Text(_isLoading ? 'Connexion...' : 'Se connecter'),
             ),
             const SizedBox(height: 8),
             TextButton(

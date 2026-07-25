@@ -15,8 +15,20 @@ import 'package:agrivito_mobile/screens/farms_screen.dart';
 import 'package:agrivito_mobile/screens/field_crop_screen.dart';
 import 'package:agrivito_mobile/screens/login_screen.dart';
 import 'package:agrivito_mobile/screens/register_screen.dart';
+import 'package:agrivito_mobile/widgets/demo_mode_banner.dart';
 
 void main() {
+  testWidgets('demo badge clearly identifies simulated data', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: DemoModeBanner(visible: true))),
+    );
+
+    expect(
+      find.text('Mode démonstration · données et analyses simulées'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('Agrivito app loads home screen', (tester) async {
     await tester.pumpWidget(
       AgrivitoApp(
@@ -37,8 +49,8 @@ void main() {
         agricultureApi: FakeAgricultureApi(),
       ),
     );
-    await tester.ensureVisible(find.text('Chat'));
-    await tester.tap(find.text('Chat'));
+    await tester.ensureVisible(find.text('Poser une question'));
+    await tester.tap(find.text('Poser une question'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatScreen), findsOneWidget);
@@ -216,8 +228,8 @@ void main() {
         agricultureApi: FakeAgricultureApi(),
       ),
     );
-    await tester.scrollUntilVisible(find.text('Login'), 300);
-    await tester.tap(find.text('Login'));
+    await tester.scrollUntilVisible(find.text('Se connecter'), 300);
+    await tester.tap(find.text('Se connecter').first);
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsOneWidget);
@@ -233,8 +245,8 @@ void main() {
         agricultureApi: FakeAgricultureApi(),
       ),
     );
-    await tester.scrollUntilVisible(find.text('Register'), 300);
-    await tester.tap(find.text('Register'));
+    await tester.scrollUntilVisible(find.text('Créer un compte'), 300);
+    await tester.tap(find.text('Créer un compte').first);
     await tester.pumpAndSettle();
 
     expect(find.byType(RegisterScreen), findsOneWidget);
@@ -249,7 +261,7 @@ void main() {
         agricultureApi: FakeAgricultureApi(),
       ),
     );
-    await tester.ensureVisible(find.text('Profil agricole'));
+    await tester.scrollUntilVisible(find.text('Profil agricole'), 300);
     await tester.tap(find.text('Profil agricole'));
     await tester.pumpAndSettle();
 
@@ -267,8 +279,14 @@ void main() {
       ),
     );
 
+    await tester.scrollUntilVisible(find.text('Mes exploitations'), 300);
     expect(find.text('Mes exploitations'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Mes cultures'), 300);
     expect(find.text('Mes cultures'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Associer culture et parcelle'),
+      300,
+    );
     expect(find.text('Associer culture et parcelle'), findsOneWidget);
     expect(find.byType(FarmsScreen), findsNothing);
     expect(find.byType(CropsScreen), findsNothing);

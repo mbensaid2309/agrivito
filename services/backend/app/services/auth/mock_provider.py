@@ -7,7 +7,10 @@ class MockAuthProvider(AuthProvider):
     """Deterministic provider used locally and in CI without Supabase calls."""
 
     _USERS = {
-        "mock-valid-token": ("00000000-0000-0000-0000-000000000001", "farmer@agrivito.test"),
+        "mock-valid-token": (
+            "00000000-0000-0000-0000-000000000001",
+            "agriculteur.demo@agrivito.local",
+        ),
         "mock-user-a": ("00000000-0000-0000-0000-00000000000a", "a@agrivito.test"),
         "mock-user-b": ("00000000-0000-0000-0000-00000000000b", "b@agrivito.test"),
     }

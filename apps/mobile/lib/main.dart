@@ -74,8 +74,10 @@ class AgrivitoApp extends StatelessWidget {
       ),
       initialRoute: HomeScreen.routeName,
       routes: {
-        HomeScreen.routeName: (_) =>
-            HomeScreen(enableHealthCheck: enableHealthCheck),
+        HomeScreen.routeName: (_) => HomeScreen(
+          enableHealthCheck: enableHealthCheck,
+          authService: authService,
+        ),
         ChatScreen.routeName: (_) => ChatScreen(
           diagnosisApi:
               diagnosisApi ??

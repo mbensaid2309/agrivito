@@ -11,6 +11,7 @@ load_dotenv()
 class Settings:
     app_env: str = "local"
     app_name: str = "agrivito-backend"
+    demo_mode: bool = False
     aws_region: str = ""
     aws_s3_bucket: str = ""
     aws_cognito_user_pool_id: str = ""
@@ -49,6 +50,13 @@ class Settings:
 def _read_env(name: str, default: str = "") -> str:
     value = os.getenv(name, default).strip()
     return value
+
+
+def _read_bool_env(name: str, default: bool = False) -> bool:
+    value = _read_env(name, "true" if default else "false").lower()
+    if value not in {"true", "false"}:
+        raise ValueError(f"{name} must be 'true' or 'false'.")
+    return value == "true"
 
 
 def load_settings() -> Settings:
@@ -186,6 +194,7 @@ def load_settings() -> Settings:
     return Settings(
         app_env=_read_env("APP_ENV", "local") or "local",
         app_name=app_name,
+        demo_mode=_read_bool_env("DEMO_MODE"),
         aws_region=aws_region,
         aws_s3_bucket=aws_s3_bucket,
         aws_cognito_user_pool_id=_read_env("AWS_COGNITO_USER_POOL_ID"),

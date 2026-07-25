@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../config/app_config.dart';
 
 enum AuthStatus {
   idle,
@@ -46,6 +49,93 @@ abstract class AuthService {
   bool get hasSession;
   Stream<AuthUserData?> get authStateChanges;
   Future<String?> getAccessToken();
+}
+
+class MockAuthService implements AuthService {
+  MockAuthService._(this._preferences, this._user);
+
+  static const _sessionKey = 'agrivito_demo_session';
+  static const _userId = '00000000-0000-0000-0000-000000000001';
+  static const _token = 'mock-valid-token';
+
+  final SharedPreferences _preferences;
+  final StreamController<AuthUserData?> _changes =
+      StreamController<AuthUserData?>.broadcast();
+  AuthUserData? _user;
+
+  static MockAuthService initialize(SharedPreferences preferences) {
+    final hasSession = preferences.getBool(_sessionKey) ?? false;
+    return MockAuthService._(
+      preferences,
+      hasSession
+          ? const AuthUserData(id: _userId, email: AppConfig.demoEmail)
+          : null,
+    );
+  }
+
+  @override
+  AuthUserData? get currentUser => _user;
+
+  @override
+  bool get hasSession => _user != null;
+
+  @override
+  Stream<AuthUserData?> get authStateChanges => _changes.stream;
+
+  @override
+  Future<String?> getAccessToken() async => hasSession ? _token : null;
+
+  @override
+  Future<AuthResult> signIn({
+    required String email,
+    required String password,
+  }) async {
+    if (email.toLowerCase() != AppConfig.demoEmail ||
+        password != AppConfig.demoPassword) {
+      return const AuthResult(
+        status: AuthStatus.invalidCredentials,
+        message: 'Identifiants de démonstration incorrects.',
+      );
+    }
+    return _startSession('Connexion de démonstration réussie.');
+  }
+
+  @override
+  Future<AuthResult> signUp({
+    required String email,
+    required String password,
+  }) async => _startSession(
+    'Compte fictif créé pour cette démonstration.',
+    email: email,
+  );
+
+  Future<AuthResult> _startSession(String message, {String? email}) async {
+    _user = AuthUserData(id: _userId, email: email ?? AppConfig.demoEmail);
+    await _preferences.setBool(_sessionKey, true);
+    _changes.add(_user);
+    return AuthResult(
+      status: AuthStatus.authenticated,
+      message: message,
+      user: _user,
+    );
+  }
+
+  @override
+  Future<AuthResult> signOut() async {
+    _user = null;
+    await _preferences.remove(_sessionKey);
+    _changes.add(null);
+    return const AuthResult(
+      status: AuthStatus.unauthenticated,
+      message: 'Session de démonstration fermée.',
+    );
+  }
+
+  @override
+  Future<AuthResult> resetPassword(String email) async => const AuthResult(
+    status: AuthStatus.passwordResetSent,
+    message: 'Mode démo : aucun email réel n’a été envoyé.',
+  );
 }
 
 class SupabaseAuthService implements AuthService {

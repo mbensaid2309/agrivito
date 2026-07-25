@@ -24,9 +24,8 @@ void main() {
       ),
     );
 
-    await tester.drag(find.byType(ListView), const Offset(0, -180));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Envoyer une photo'));
+    await tester.scrollUntilVisible(find.text('Analyser une photo'), 300);
+    await tester.tap(find.text('Analyser une photo'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PhotoUploadScreen), findsOneWidget);

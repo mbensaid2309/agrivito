@@ -13,6 +13,7 @@ session au backend, sans donner au mobile un acces direct aux tables metier.
 - package `http` pour appeler uniquement le backend Agrivito
 - package officiel `image_picker` pour la galerie et la camera
 - package officiel `supabase_flutter`, limite a l'authentification
+- `shared_preferences` pour restaurer uniquement la session auth mock locale
 
 ## Installation
 
@@ -23,11 +24,26 @@ flutter pub get
 
 ## Lancement local
 
+Mode démonstration immédiat, sans Supabase :
+
+```bash
+flutter run -d chrome \
+  --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=DEMO_MODE=true \
+  --dart-define=AUTH_MODE=mock
+```
+
+Le compte fictif prérempli est `agriculteur.demo@agrivito.local` avec le mot de
+passe `DemoAgrivito123!`. La session de démonstration est restaurée localement.
+
+Mode Supabase réel :
+
 Avec le backend sur la machine :
 
 ```bash
 flutter run \
   --dart-define=AGRIVITO_API_BASE_URL=http://127.0.0.1:8000 \
+  --dart-define=AUTH_MODE=live \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=PUBLIC_ANON_KEY
 ```

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
+import '../widgets/demo_mode_banner.dart';
+import 'agricultural_profile_screen.dart';
+import 'crops_screen.dart';
 import 'farms_screen.dart';
 import 'login_screen.dart';
 
@@ -36,6 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const DemoModeBanner(),
+            if (AppConfig.demoMode) const SizedBox(height: 16),
             const CircleAvatar(radius: 32, child: Icon(Icons.person_outline)),
             const SizedBox(height: 16),
             Text(user?.email ?? 'Aucune session active'),
@@ -48,6 +54,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : () =>
                         Navigator.of(context).pushNamed(FarmsScreen.routeName),
               child: const Text('Accéder à mes données privées'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: user == null
+                  ? null
+                  : () => Navigator.of(
+                      context,
+                    ).pushNamed(AgriculturalProfileScreen.routeName),
+              child: const Text('Compléter mon profil agricole'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: user == null
+                  ? null
+                  : () =>
+                        Navigator.of(context).pushNamed(CropsScreen.routeName),
+              child: const Text('Voir mes cultures'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(

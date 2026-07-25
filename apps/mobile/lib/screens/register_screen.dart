@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../config/app_config.dart';
+import '../widgets/demo_mode_banner.dart';
 import 'chat_screen.dart';
 import 'login_screen.dart';
 
@@ -84,17 +86,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(title: const Text('Créer un compte')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const DemoModeBanner(),
+            if (AppConfig.demoMode) const SizedBox(height: 16),
             Text(
               'Créer un compte Agrivito',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            const Text('Créez un compte sécurisé avec Supabase Auth.'),
+            Text(
+              AppConfig.usesMockAuth
+                  ? 'Le compte créé est fictif et local à la démonstration.'
+                  : 'Créez un compte sécurisé avec Supabase Auth.',
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
