@@ -5,6 +5,7 @@ import '../services/media_api_service.dart';
 import '../services/media_picker_service.dart';
 import '../models/photo_diagnosis_models.dart';
 import '../services/photo_diagnosis_api_service.dart';
+import '../widgets/demo_mode_banner.dart';
 import 'photo_diagnosis_screen.dart';
 
 class PhotoUploadScreen extends StatefulWidget {
@@ -142,6 +143,8 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const DemoModeBanner(),
+            const SizedBox(height: 12),
             Text(
               'Photo agricole',
               style: Theme.of(context).textTheme.headlineSmall,

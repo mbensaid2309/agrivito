@@ -18,8 +18,11 @@ void main() {
         photoDiagnosisApi: FakePhotoDiagnosisApi(_result()),
       ),
     );
-    await tester.scrollUntilVisible(find.text('Analyser une photo'), 300);
-    await tester.tap(find.text('Analyser une photo'));
+    await tester.scrollUntilVisible(
+      find.text('Ouvrir un diagnostic photo'),
+      300,
+    );
+    await tester.tap(find.text('Ouvrir un diagnostic photo'));
     await tester.pumpAndSettle();
     expect(find.byType(PhotoDiagnosisScreen), findsOneWidget);
   });

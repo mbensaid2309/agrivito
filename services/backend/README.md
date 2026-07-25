@@ -117,6 +117,11 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+Pour la revue produit, utiliser `./scripts/start-demo.sh` depuis la racine. Le
+script force `DEMO_MODE=true`, les providers mock et le stockage local, applique
+les migrations puis charge les données fictives de manière idempotente. Il ne
+doit recevoir qu'une `DATABASE_URL` PostgreSQL locale ou de test.
+
 Verifier le backend :
 
 ```bash

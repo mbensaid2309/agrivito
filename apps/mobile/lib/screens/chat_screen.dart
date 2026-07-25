@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/ai_diagnosis_models.dart';
 import '../services/ai_diagnosis_api_service.dart';
 import '../services/discovery_session.dart';
+import '../widgets/demo_mode_banner.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -140,6 +141,8 @@ class _ChatScreenState extends State<ChatScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const DemoModeBanner(),
+            const SizedBox(height: 12),
             Text(
               'Mode découverte',
               style: Theme.of(context).textTheme.titleLarge,

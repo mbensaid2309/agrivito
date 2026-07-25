@@ -4,6 +4,7 @@ import '../models/ai_diagnosis_models.dart';
 import '../models/media_models.dart';
 import '../models/photo_diagnosis_models.dart';
 import '../services/photo_diagnosis_api_service.dart';
+import '../widgets/demo_mode_banner.dart';
 
 class PhotoDiagnosisScreen extends StatefulWidget {
   static const routeName = '/photo-diagnosis';
@@ -119,6 +120,8 @@ class _PhotoDiagnosisScreenState extends State<PhotoDiagnosisScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const DemoModeBanner(),
+            const SizedBox(height: 12),
             Text(
               'Analyse visuelle prudente',
               style: Theme.of(context).textTheme.headlineSmall,

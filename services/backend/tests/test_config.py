@@ -12,11 +12,13 @@ from app.services.photo_diagnosis.mock_provider import MockVisionProvider
 def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("APP_NAME", raising=False)
     monkeypatch.delenv("APP_ENV", raising=False)
+    monkeypatch.delenv("DEMO_MODE", raising=False)
 
     settings = load_settings()
 
     assert settings.app_env == "local"
     assert settings.app_name == "agrivito-backend"
+    assert settings.demo_mode is False
     assert settings.log_level == "INFO"
     assert settings.ai_mode == "mock"
     assert settings.openai_timeout_seconds == 30
@@ -34,6 +36,19 @@ def test_minimal_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.auth_mode == "mock"
     assert settings.auth_audience == "authenticated"
     assert settings.auth_timeout_seconds == 10
+
+
+def test_demo_mode_is_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DEMO_MODE", "true")
+    assert load_settings().demo_mode is True
+
+
+def test_demo_mode_rejects_ambiguous_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEMO_MODE", "yes")
+    with pytest.raises(ValueError, match="DEMO_MODE"):
+        load_settings()
 
 
 def test_live_auth_derives_supabase_issuer_and_jwks(

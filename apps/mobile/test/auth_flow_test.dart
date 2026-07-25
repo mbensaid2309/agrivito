@@ -22,7 +22,7 @@ void main() {
       ),
     );
     await tester.pumpWidget(_authApp(auth));
-    await tester.tap(find.text('Connexion'));
+    await tester.tap(find.text('Se connecter'));
     await tester.pump();
     expect(
       find.text('Email et mot de passe sont obligatoires.'),
@@ -31,12 +31,12 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(0), 'invalid');
     await tester.enterText(find.byType(TextField).at(1), 'password123');
-    await tester.tap(find.text('Connexion'));
+    await tester.tap(find.text('Se connecter'));
     await tester.pump();
     expect(find.text('Saisissez une adresse email valide.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'farmer@example.test');
-    await tester.tap(find.text('Connexion'));
+    await tester.tap(find.text('Se connecter'));
     await tester.pumpAndSettle();
     expect(find.text('Identifiants incorrects.'), findsOneWidget);
   });
@@ -58,6 +58,7 @@ void main() {
     await tester.enterText(fields.at(1), 'farmer@example.test');
     await tester.enterText(fields.at(2), 'password123');
     await tester.enterText(fields.at(3), 'different123');
+    await tester.ensureVisible(find.text('Créer le compte'));
     await tester.tap(find.text('Créer le compte'));
     await tester.pump();
     expect(
@@ -65,6 +66,7 @@ void main() {
       findsOneWidget,
     );
     await tester.enterText(fields.at(3), 'password123');
+    await tester.ensureVisible(find.text('Créer le compte'));
     await tester.tap(find.text('Créer le compte'));
     await tester.pumpAndSettle();
     expect(find.text('Compte créé.'), findsOneWidget);
